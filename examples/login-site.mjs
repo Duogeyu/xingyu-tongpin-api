@@ -1,7 +1,7 @@
 // 「用星遇同频登录」的最小网站示例（Node 18 以上，没有依赖）：授权码 + PKCE + state。
 //
 //   1. 在「我的资料 → 第三方客户端 → 开发者 → 我登记的应用」登记，回调地址填 http://localhost:3000/callback
-//   2. CLIENT_ID=app_… CLIENT_SECRET=sec_… SCOPE="profile vrchat card" node examples/login-site.mjs
+//   2. CLIENT_ID=app_… CLIENT_SECRET=sec_… SCOPE="profile card" node examples/login-site.mjs
 //      （SCOPE 只写用得到的；不写只有 profile：编号和星号）
 //   3. 打开 http://localhost:3000
 //
@@ -10,7 +10,7 @@
 import { createServer } from 'node:http';
 import { randomBytes, createHash } from 'node:crypto';
 
-const { CLIENT_ID, CLIENT_SECRET, SCOPE = 'profile vrchat' } = process.env;
+const { CLIENT_ID, CLIENT_SECRET, SCOPE = 'profile' } = process.env;
 const PORT = 3000, REDIRECT = `http://localhost:${PORT}/callback`;
 const pending = new Map();   // state → code_verifier（真实网站放在玩家的会话里）
 const users = new Map();     // sub → 玩家（真实网站放进数据库）

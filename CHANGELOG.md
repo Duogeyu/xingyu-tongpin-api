@@ -2,6 +2,15 @@
 
 接口要变的地方先写在这里，旧的写法会留一段时间再停。
 
+## 2026-10-25 · 应用审核：敏感权限要先审核
+
+- 敏感权限（`vrchat`、`maps.rate`、`crossings`、`mutuals`、`today`、`inbox`、`link`、`chat`、`chat.send`、`posts`、`posts.write`）只给开 Issue 登记的客户端和审核通过的自助登记应用。
+- 没审核的应用：敏感权限只有登记人自己的账号能同意，用来开发测试；别的玩家同意会被拒（`403 scope_unreviewed`），取消照样带 `access_denied` 回去。
+- `dev-` 只能要普通权限，不写就是 `profile notifications maps`（连接码也是）；要敏感的 `device/code` 回答 `403 scope_unreviewed`。
+- 每次调用都再查：审核被撤回，敏感接口当场回答 `403 scope_unreviewed`，`userinfo` 的 `vrc` 变成 `null`，普通接口照常。
+- 申请审核：「我的资料 → 第三方客户端 → 我登记的应用 → 申请审核」，填做什么用、源码地址（客户端必须开源）、会怎么用玩家的数据；结果发邮件和站内通知；改了已通过的应用会回到未审核。
+- 示例 `login-site.mjs` 默认改成只要 `profile`。
+
 ## 2026-10-25 · 第二批：今天的星、连向我、连线、私聊、星友圈
 
 - 新权限和接口，做的事和网页一样，网页的规则和上限照样算：`today`（`GET me/today`）、`inbox`（`GET me/inbox[?mark=1]`）、`link`（`POST me/links`）、`chat`（`GET me/chats`、`GET me/chats/{n}`）、`chat.send`（`POST me/chats/{n}`）、`posts`（`GET me/posts`）、`posts.write`（`POST me/posts`，只能发文字）。

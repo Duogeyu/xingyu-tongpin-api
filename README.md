@@ -10,7 +10,7 @@
 | --- | --- | --- | --- |
 | **开放数据** | 不用登录（仅需 `client` 标识） | VRChat 世界里的地图榜组件、社区网站、机器人 | 和公开的 [地图榜页面](https://vrcc.cc/maps/) 一样：过审地图、平均分、几人评分、名次、性能轻重（不含谁打的分和短评） |
 | **玩家自己的** | 需要令牌（`Authorization: Bearer`），玩家用**设备授权**同意后拿到 | 桌面客户端（如官方 [VRCX 脚本](https://github.com/vrcc-cc/xingyu-tongpin-vrcx)、VRCX 分支、Tauri 工具） | 只给这位玩家本人，按玩家同意的[权限](#权限scope)：收提醒、看星轨相交和互相连上的星、看星卡、看和打地图评分、今天的星、连向我、连线、私聊、星友圈 |
-| **用星遇同频登录** | 网站自己登记拿 `client_id`，玩家点「继续」后拿到令牌 | 想让玩家「用星遇同频登录」的网站（像 Google 登录那样） | 默认只给这个网站专用的编号和星号；按要的[权限](#权限scope)还能给更多（VRChat 账号、星卡、地图评分、提醒、私聊等） |
+| **用星遇同频登录** | 网站自己登记拿 `client_id`，玩家点「继续」后拿到令牌 | 想让玩家「用星遇同频登录」的网站（像 Google 登录那样） | 默认只给这个网站专用的编号和星号；按要的[权限](#权限scope)还能给更多（星卡、地图评分、提醒；VRChat 账号、私聊这类敏感权限要先[审核](#申请审核)） |
 
 ## 目录
 
@@ -77,9 +77,9 @@
    - 用了哪些接口、拿来做什么
    - 怎么联系你
    
-   我们核对后把标识加进名单，才能正式使用。**开发、自测时用 `dev-` 开头的标识**（比如 `dev-mywidget`）；正式发布前必须登记。
+   我们核对后把标识加进名单，才能正式使用。**开发、自测时用 `dev-` 开头的标识**（比如 `dev-mywidget`），但 `dev-` 只能要普通权限；要开发用到敏感权限的功能，在网页上自己登记一个应用来测。正式发布前必须登记。
 
-   只做「用星遇同频登录」的网站不用开 Issue，在网页上自己登记，见「[用星遇同频登录](#用星遇同频登录网站)」。
+   也可以不开 Issue，在网页上自己登记应用（网站或客户端），见「[登记应用](#登记应用)」。自己登记的应用要用敏感权限，先[申请审核](#申请审核)，客户端要开源。
 2. **每个请求都带 `client`。** 用登记过的标识，不冒充别人。
 3. **守频率。** 见下面「[频率限制](#频率限制)」；收到 `429` 就等一分钟再试。开放数据变得很慢，取一次用一阵，不要每秒都问。
 4. **不绕过检查。** 发现安全问题，在本仓库的 Security 页私下报告，不要开公开 Issue。
@@ -93,7 +93,7 @@
 
    改资料、注销这类账号操作不在接口里，以后也不会放进来。
 9. **写明是第三方。** 界面上说清这是第三方客户端，不是星遇同频官方；连接、断开都由玩家自己操作，随时能断开。
-10. **只要用得到的权限。** 同意页会把你要的每一项都列出来，玩家不能只勾一部分，要得越多越容易被拒。
+10. **只要用得到的权限，敏感权限先过审核。** 同意页会把你要的每一项都列出来，玩家不能只勾一部分，要得越多越容易被拒。敏感权限只给开 Issue 登记的客户端和审核通过的应用；申请时写的用途、源码（客户端必须开源）和数据用法，要和实际做的一样。
 
 ### 做「用星遇同频登录」还要做到
 
@@ -213,14 +213,14 @@ sequenceDiagram
 
 每个令牌都带一串权限，只能调权限里有的接口。多个权限用空格分开（逗号、`+` 也行）。
 
-| 权限 | 玩家在同意页看到 | 能用的接口 | 客户端不写时 | 自助登记的应用能要 |
+| 权限 | 玩家在同意页看到 | 能用的接口 | 登记过的客户端不写时 | 敏感 |
 | --- | --- | --- | :---: | :---: |
-| `profile` | 识别你的登录身份，并读取你的星号（没有星号时：识别你的登录身份（专属匿名编号）） | `oauth/userinfo` 的 `sub`、`star` | 总有 | 总有 |
+| `profile` | 识别你的登录身份，并读取你的星号（没有星号时：识别你的登录身份（专属匿名编号）） | `oauth/userinfo` 的 `sub`、`star` | 总有 | |
 | `vrchat` | 查看你的 VRChat 名字「{名字}」和 ID（没验证时：查看你的 VRChat 名字和 ID（你还没验证，不会提供）） | `oauth/token`、`oauth/userinfo` 的 `vrc` | | ✓ |
-| `card` | 查看你的星卡（星群、介绍和成分） | `GET me/card` | | ✓ |
-| `maps` | 查看你在地图榜的评分和短评 | `GET me/maps`、`GET me/maps/{world}` | ✓ | ✓ |
+| `card` | 查看你的星卡（星群、介绍和成分） | `GET me/card` | | |
+| `maps` | 查看你在地图榜的评分和短评 | `GET me/maps`、`GET me/maps/{world}` | ✓ | |
 | `maps.rate` | 在你操作时，为你去过的地图打分 | `POST me/maps/{world}/rating` | ✓ | ✓ |
-| `notifications` | 接收你的星遇同频提醒 | `GET me/notifications`、`GET me/notifications/recent` | ✓ | ✓ |
+| `notifications` | 接收你的星遇同频提醒 | `GET me/notifications`、`GET me/notifications/recent` | ✓ | |
 | `crossings` | 查看你的「星轨相交」 | `GET me/crossings` | ✓ | ✓ |
 | `mutuals` | 查看与你互相连上的星和他们的 VRChat 名字 | `GET me/mutuals` | ✓ | ✓ |
 | `today` | 查看你今天路过的星（会看到其他玩家的资料） | `GET me/today` | | ✓ |
@@ -231,8 +231,14 @@ sequenceDiagram
 | `posts` | 查看星友圈（会看到其他玩家的动态） | `GET me/posts` | | ✓ |
 | `posts.write` | 在你操作时，替你发星友圈 | `POST me/posts` | | ✓ |
 
-- **登记过的客户端**（开 Issue 登记的，或 `dev-`）在 `POST /device/code` 里用 `scope` 要，什么都能要；不写就是 `profile notifications crossings mutuals maps maps.rate`（和我们的 VRCX 脚本一样）。旧的连接码连上的也是这一串。
-- **自助登记的应用**（`app_…`，网站或客户端都行）也什么都能要，不写只有 `profile`：网站在 `/oauth/authorize` 里用 `scope` 要，客户端在 `POST /device/code` 里要（`X-Client` 填 `client_id`）。同意页会写明它是「玩家自行登记，未经星遇同频审核」，玩家的列表里标「未审核」。
+**敏感权限只给审核过的。** 普通权限（`profile`、`card`、`maps`、`notifications`）谁都能要；打了 ✓ 的敏感权限只给：
+
+- **开 Issue 登记的客户端**：什么都能要。不写就是 `profile notifications crossings mutuals maps maps.rate`（和我们的 VRCX 脚本一样），旧的连接码连上的也是这一串。
+- **审核通过的自助登记应用**（`app_…`）：什么都能要，不写只有 `profile`。网站在 `/oauth/authorize` 里用 `scope` 要，客户端在 `POST /device/code` 里要（`X-Client` 填 `client_id`）。
+- **还没审核通过的自助登记应用**：敏感权限只有**登记人自己的账号**能同意，方便开发和测试；别的玩家点同意会被拒（`403 scope_unreviewed`），点取消照样带 `access_denied` 回去。同意页写明它是「玩家自行登记，未经星遇同频审核」，玩家的列表里标「未审核」。
+- **`dev-` 标识**：只能要普通权限，不写就是 `profile notifications maps`；要敏感的，`device/code` 回答 `403 scope_unreviewed`。用连接码连上的也只有这三项。要开发敏感功能，自己登记一个应用，用登记人的账号测。
+
+每次调用都会再查一遍：审核被撤回，敏感接口当场回答 `403 scope_unreviewed`，`oauth/userinfo` 的 `vrc` 变成 `null`；普通接口照常能用。
 - 带「会看到其他玩家的……」的几项，同意页那一行就这么写，玩家知道你会看到别人的资料和消息。
 - **同意页列出要的每一项**，顶上写一共几项普通权限、几项敏感权限。敏感的是 `vrchat`、`maps.rate`、`crossings`、`mutuals`、`today`、`inbox`、`link`、`chat`、`chat.send`、`posts`、`posts.write`，排在前面、标着「敏感」；超过三项的先收起，玩家点开能看全。玩家不能只同意其中几项，所以只要用得到的。
 - 没有权限时调 `me/…`，回答 `403` `{"error": "scope", "need": "<缺的权限>"}`。
@@ -248,6 +254,7 @@ sequenceDiagram
 | `429` | `too_many` | 问得太快或今天次数用完（包括每个令牌自己每天的读、连线、私聊、发动态次数），等至少一分钟后再试 |
 | `401` | `token` | 玩家自己的接口没带令牌，或令牌格式不对 |
 | `403` | `client_mismatch` | 令牌不是发给这个 `X-Client` 的：每个令牌只能配拿到它的那个客户端或网站的标识用（先查这个，再查权限） |
+| `403` | `scope_unreviewed` | 敏感权限要审核：`dev-` 要了敏感权限，没审核的应用由别的玩家同意，或审核被撤回。`need` 写着是哪项 |
 | `403` | `scope` | 令牌没有这个接口要的权限，`need` 写着缺哪个；要用就让玩家重新授权，这次把它要上 |
 | `404` | `gone` | **令牌失效**（玩家断开了、同一个客户端又授权了一次、星被删除）：停下轮询，让玩家重新授权 |
 | `404` | `star_gone` | 连线、私聊的**对方**不在了。令牌没事，不用重新授权 |
@@ -345,9 +352,7 @@ sequenceDiagram
 { "scope": "notifications maps maps.rate" }
 ```
 
-不写 `scope` 就是 `profile notifications crossings mutuals maps maps.rate`。`profile` 总会加上。
-
-自助登记的应用也能用设备授权（`X-Client` 填 `client_id`）：不写只有 `profile`，什么权限都能要。
+不写 `scope` 时：开 Issue 登记的客户端是 `profile notifications crossings mutuals maps maps.rate`，`dev-` 是 `profile notifications maps`，自助登记的应用（`X-Client` 填 `client_id`）只有 `profile`。`profile` 总会加上。敏感权限要审核，见「[权限](#权限scope)」。
 
 **成功回答（`200`）：**
 
@@ -373,10 +378,11 @@ sequenceDiagram
 | `interval` | 多少秒问一次 `/device/token`（`5`） |
 | `scope` | 这次要的权限（按固定顺序，`profile` 在最前） |
 
-玩家要先登录星遇同频。打开链接后，玩家看到客户端的名字（没登记的 `dev-` 标识会写「（测试中）」和「还没登记，只在测试」；自助登记的应用显示它登记的名称，下面写「玩家自行登记，未经星遇同频审核」）和要的每一项权限（顶上写一共需要几项普通权限、几项敏感权限；敏感的排在前面、标着「敏感」；超过三项的先收起，可以展开），然后点「同意连接」或「取消」。
+玩家要先登录星遇同频。打开链接后，玩家看到客户端的名字（没登记的 `dev-` 标识会写「（测试中）」和「还没登记，只在测试」；自助登记的应用显示它登记的名称，下面写「玩家自行登记，未经星遇同频审核」）和要的每一项权限（顶上写一共需要几项普通权限、几项敏感权限；敏感的排在前面、标着「敏感」；超过三项的先收起，可以展开），然后点「同意连接」或「取消」。没审核的应用要了敏感权限，只有登记人自己能同意，别的玩家点同意会被拒，客户端一直等到 `expired_token`。
 
 - **错误状态**：
   - `400 invalid_scope`：`scope` 里有不认识的权限
+  - `403 scope_unreviewed`：`dev-` 要了敏感权限
   - `429 too_many`：这个网络今天拿的码太多（每天最多 30 个）
 
 ---
@@ -422,7 +428,7 @@ sequenceDiagram
 
 ### 连接码（旧方式）：`POST /api/v1/connect`
 
-旧的方式，**还能用**，新客户端请用上面的设备授权。用连接码连上的，也是这个客户端自己的授权，不会顶掉 VRCX 脚本；权限是客户端的默认那一串。
+旧的方式，**还能用**，新客户端请用上面的设备授权。用连接码连上的，也是这个客户端自己的授权，不会顶掉 VRCX 脚本；权限：开 Issue 登记的客户端是默认那一串，`dev-` 和自助登记的应用是 `profile notifications maps`。
 
 玩家在星遇同频网页「我的资料 → 在 VRCX 里提醒」拿到连接码（8 位，10 分钟内有效，只能用一次），发给此接口换取**令牌**（48 位十六进制）。
 
@@ -726,7 +732,7 @@ sequenceDiagram
 
 下面这些接口做的事和网页一样：今天的星、连向我、连线、私聊、星友圈。规则和上限都是网页的（比如只能连今天这一轮的星、只能和互相连上的人私聊、发言要过检查、16–17 岁和 18 岁以上分开），回答也和网页一样。这里只写主要字段，其余字段跟网页一致，以后可能会加。
 
-另外每个令牌自己每天还有上限：这一批的读接口加起来 1000 次，连线 20 次，私聊 100 条，发星友圈 5 条，超了回答 `429 too_many`。
+这一批的权限都是敏感权限，要[审核](#申请审核)过才能给别的玩家用。另外每个令牌自己每天还有上限：这一批的读接口加起来 1000 次，连线 20 次，私聊 100 条，发星友圈 5 条，超了回答 `429 too_many`。
 
 对方不在了（比如连线、私聊的那颗星走了），回答 `404 star_gone`；`404 gone` 只表示令牌失效。
 
@@ -870,7 +876,7 @@ sequenceDiagram
 
 不写 `scope` 时只有 `profile`：只有 `sub` 和 `star`。能要的权限见「[权限](#权限scope)」。要了别的权限的，可以用同一个令牌调对应的 `me/…` 接口（见下面「[用令牌调玩家自己的接口](#用令牌调玩家自己的接口)」）。
 
-### 登记网站
+### 登记应用
 
 登录星遇同频，去「我的资料 → 第三方客户端 → 开发者 → 我登记的应用」。一次登记可以是网站，也可以是桌面客户端。填：
 
@@ -883,7 +889,17 @@ sequenceDiagram
 - `client_id`：`app_` 加 16 位十六进制。
 - `client_secret`：`sec_` 加 48 位十六进制，**只显示这一次**。丢了可以重新生成，旧的立刻不能用。
 
-每人最多登记 5 个。我们不提前审核：登录页写着「这个网站由玩家自行登记，未经星遇同频审核。请只在你信任的网站登录。」，设备授权的同意页写着「玩家自行登记，未经星遇同频审核」，玩家的列表里标「未审核」。违反「[使用要求](#使用要求)」的，管理员会停用。
+每人最多登记 5 个。登记完就能用普通权限；敏感权限要[申请审核](#申请审核)。没审核的：登录页写着「这个网站由玩家自行登记，未经星遇同频审核。请只在你信任的网站登录。」，设备授权的同意页写着「玩家自行登记，未经星遇同频审核」，玩家的列表里标「未审核」。违反「[使用要求](#使用要求)」的，管理员会停用。
+
+#### 申请审核
+
+要用敏感权限（`vrchat`、`maps.rate`、`crossings`、`mutuals`、`today`、`inbox`、`link`、`chat`、`chat.send`、`posts`、`posts.write`）的，在「我的资料 → 第三方客户端 → 我登记的应用」点「申请审核」，填三项：
+
+- **做什么用**
+- **源码地址**：`https://`。客户端必须开源
+- **会怎么用玩家的数据**
+
+结果用邮件和站内通知告诉你。没通过会写原因，改好可以再申请。通过以后再改应用的登记信息，会回到未审核，要重新申请。审核通过前，敏感权限只有你自己的账号能同意，用来开发和测试。
 
 > [!NOTE]
 > 回调地址按浏览器 `URL` 的写法比对，必须完全一样。比如 `https://a.com` 会存成 `https://a.com/`，跳转时也要带 `https://a.com/`。
@@ -899,7 +915,7 @@ https://vrcc.cc/oauth/authorize?response_type=code
   &state=<随机字符串>
   &code_challenge=<PKCE>
   &code_challenge_method=S256
-  &scope=profile%20vrchat
+  &scope=profile%20card
 ```
 
 （实际是一行，参数要做网址编码。）
@@ -919,6 +935,7 @@ https://vrcc.cc/oauth/authorize?response_type=code
 - 点「继续」：回到 `redirect_uri?code=<48 位十六进制>&state=<原样带回>`。`code` **5 分钟内有效，只能用一次**。
 - 点「取消」：回到 `redirect_uri?error=access_denied&state=<原样带回>`。
 - `client_id` 没登记、网站被停用、`redirect_uri` 不在登记的里面、`scope` 里有不认识的权限：**不会跳回你的网站**，错误只显示在星遇同频的页面上。
+- 网站还没审核通过却要了敏感权限，别的玩家点「继续」会被拒（`scope_unreviewed`），也只显示在星遇同频的页面上；点「取消」照样带 `access_denied` 回去。登记人自己的账号可以正常登录测试。
 
 ### 第二步：换令牌 `POST /api/v1/oauth/token`
 
@@ -971,7 +988,7 @@ grant_type=authorization_code
 | `400` | `invalid_grant` | `code` 不对、过期了或已经用过，`redirect_uri` 和第一步不一样，或 `code_verifier` 不对 |
 
 - `scope`：这次玩家同意的权限。
-- `user.vrc`：只在有 `vrchat` 权限、玩家也验证过时才有。
+- `user.vrc`：只在有 `vrchat` 权限（敏感，要审核）、玩家也验证过时才有。
 
 同一位玩家在同一个网站再登录一次，这个网站之前给他的令牌就失效了（新令牌的权限按这一次的 `scope`）。
 
@@ -985,6 +1002,7 @@ curl -H "Authorization: Bearer <access_token>" https://vrcc.cc/api/v1/oauth/user
 
 - **成功（`200`）**：和上面的 `user` 一样：`{"sub": "…", "star": 128, "vrc": {…}}`。
 - **`401 invalid_token`**：玩家在「我的资料 → 第三方客户端」断开了你的网站，或网站被停用。把这位玩家当成登出，要用就让 TA 重新登录。
+- 审核被撤回后，`vrc` 会变成 `null`，`sub` 和 `star` 照常。
 
 两个 `oauth/` 接口都能跨域调用（`Access-Control-Allow-Origin: *`）。
 
@@ -997,7 +1015,7 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 ```
 
 - `client_id` 在网站登记期间都能当 `X-Client`（或 `?client=`）用，开放数据接口也一样；网站删了或没登记，回答 `403 client_unknown`。
-- 只能调权限里有的接口，别的回答 `403 scope`。玩家断开以后回答 `404 gone`。
+- 只能调权限里有的接口，别的回答 `403 scope`；敏感接口在审核没通过或被撤回时回答 `403 scope_unreviewed`。玩家断开以后回答 `404 gone`。
 - 令牌只能配你自己的 `client_id` 用，`X-Client` 换成别的标识回答 `403 client_mismatch`。
 - 字段、限制和桌面客户端一样，见「[玩家自己的接口](#玩家自己的接口)」。
 
@@ -1036,8 +1054,8 @@ node examples/client.mjs mutuals                  # 查看互相连上的星
 node examples/client.mjs recent                   # 查看最近的提醒
 node examples/client.mjs card                     # 查看自己的星卡（要 card 权限）
 node examples/client.mjs mymaps                   # 查看打过分的地图
-node examples/client.mjs today                    # 今天的星（要 today 权限）
-node examples/client.mjs chats                    # 私聊列表（要 chat 权限）
+node examples/client.mjs today                    # 今天的星（要 today 权限，敏感：dev- 要不到，用审核过的标识）
+node examples/client.mjs chats                    # 私聊列表（要 chat 权限，同上）
 node examples/client.mjs map wrld_…               # 查看当前所在地图
 node examples/client.mjs rate wrld_… 9 "很棒的图"  # 给地图打分和写短评
 node examples/client.mjs off                      # 断开连接并清除本地令牌
@@ -1047,7 +1065,8 @@ node examples/client.mjs off                      # 断开连接并清除本地�
 
 ```bash
 # 先在「我登记的应用」里加回调地址 http://localhost:3000/callback
-CLIENT_ID=app_… CLIENT_SECRET=sec_… SCOPE="profile vrchat card" node examples/login-site.mjs
+CLIENT_ID=app_… CLIENT_SECRET=sec_… SCOPE="profile card" node examples/login-site.mjs
+# 要 vrchat 等敏感权限：审核通过前只有登记人自己的账号能登录
 # 打开 http://localhost:3000
 ```
 
