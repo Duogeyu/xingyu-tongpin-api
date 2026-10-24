@@ -1,6 +1,6 @@
 # 星遇同频 · 开放接口
 
-**[📖 在线交互式 API 文档 (API Wiki)](https://duogeyu.github.io/xingyu-tongpin-api/)** · **[OpenAPI 规范 (`openapi.yaml`)](openapi.yaml)** · **[最小示例 (`examples/client.mjs`)](examples/client.mjs)** · **[更新记录 (`CHANGELOG.md`)](CHANGELOG.md)**
+**[📖 在线交互式 API 文档 (API Wiki)](https://docs.vrcc.cc/)** · **[OpenAPI 规范 (`openapi.yaml`)](openapi.yaml)** · **[最小示例 (`examples/client.mjs`)](examples/client.mjs)** · **[更新记录 (`CHANGELOG.md`)](CHANGELOG.md)**
 
 ---
 
@@ -9,7 +9,7 @@
 | 类别 | 是否需要令牌 | 适用场景 | 数据范围 |
 | --- | --- | --- | --- |
 | **开放数据** | 不用登录（仅需 `client` 标识） | VRChat 世界里的地图榜组件、社区网站、机器人 | 和公开的 [地图榜页面](https://vrcc.cc/maps/) 一样：过审地图、平均分、几人评分、名次、性能轻重（不含谁打的分和短评） |
-| **玩家自己的** | 需要令牌（`Authorization: Bearer`） | 桌面客户端（如官方 [VRCX 脚本](https://github.com/Duogeyu/xingyu-tongpin-vrcx)、VRCX 分支、Tauri 工具） | 只给这位玩家本人，范围和网页上一样：收提醒、看星轨相交和互相连上的星、给所在地图打分 |
+| **玩家自己的** | 需要令牌（`Authorization: Bearer`） | 桌面客户端（如官方 [VRCX 脚本](https://github.com/vrcc-cc/xingyu-tongpin-vrcx)、VRCX 分支、Tauri 工具） | 只给这位玩家本人，范围和网页上一样：收提醒、看星轨相交和互相连上的星、给所在地图打分 |
 
 ## 目录
 
@@ -41,7 +41,7 @@
 | **玩家本人** | `GET` | [`/api/v1/me/maps/{world}`](#所在的地图get-apiv1memapsworld) | `client` + `Bearer` | 玩家当前所在地图在榜上的状态、本人评分与短评 |
 | **玩家本人** | `POST` | [`/api/v1/me/maps/{world}/rating`](#打分post-apiv1memapsworldrating) | `client` + `Bearer` | 给当前所在的地图打分（1–10 分）及写短评（最多 30 字） |
 
-> 💡 想要在线调试请求或复制各语言代码（cURL / JS / Python / Rust / C#），请直接打开 **[在线交互式 API 文档 (API Wiki)](https://duogeyu.github.io/xingyu-tongpin-api/)**。
+> 💡 想要在线调试请求或复制各语言代码（cURL / JS / Python / Rust / C#），请直接打开 **[在线交互式 API 文档 (API Wiki)](https://docs.vrcc.cc/)**。
 
 ---
 
@@ -51,7 +51,7 @@
 
 ### 所有调用方通用要求
 
-1. **先登记。** 在本仓库 [开一个 Issue](https://github.com/Duogeyu/xingyu-tongpin-api/issues/new?title=%E7%99%BB%E8%AE%B0%E5%AE%A2%E6%88%B7%E7%AB%AF%EF%BC%9A)，标题写「登记客户端」，写清：
+1. **先登记。** 在本仓库 [开一个 Issue](https://github.com/vrcc-cc/xingyu-tongpin-api/issues/new?title=%E7%99%BB%E8%AE%B0%E5%AE%A2%E6%88%B7%E7%AB%AF%EF%BC%9A)，标题写「登记客户端」，写清：
    - 叫什么名字
    - 你给它定的 `client` 标识
    - 源码或 VRChat 世界在哪
@@ -172,7 +172,7 @@ sequenceDiagram
   - 普通网站网页无法跨域调用。
 - **从程序后端或脚本直接发请求**（Rust、Node.js、Python、C# 等）：不受浏览器跨域限制。
 
-完整的字段定义和类型约束见 [`openapi.yaml`](openapi.yaml) 或 [在线交互式 API 文档](https://duogeyu.github.io/xingyu-tongpin-api/)。
+完整的字段定义和类型约束见 [`openapi.yaml`](openapi.yaml) 或 [在线交互式 API 文档](https://docs.vrcc.cc/)。
 
 ---
 

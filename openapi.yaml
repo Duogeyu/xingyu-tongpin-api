@@ -11,7 +11,7 @@ info:
     | 类别 | 是否需要令牌 | 适用场景 | 数据范围 |
     | --- | --- | --- | --- |
     | **开放数据 · 地图榜** | 否（仅需 `client` 标识） | VRChat 世界内 Udon 组件、社区网站、群聊机器人 | 与公开的 [地图榜页面](https://vrcc.cc/maps/) 一致（仅含过审地图、均分、评分人数、名次、性能档位，不含评分人与短评） |
-    | **玩家个人接口** | 是（`Authorization: Bearer <令牌>`） | 桌面端工具（如 [VRCX 脚本](https://github.com/Duogeyu/xingyu-tongpin-vrcx)、VRCX 分支、Tauri 客户端） | 仅限当前授权玩家本人（收提醒、看星轨相交与互相连上的星、给所在地图打分） |
+    | **玩家个人接口** | 是（`Authorization: Bearer <令牌>`） | 桌面端工具（如 [VRCX 脚本](https://github.com/vrcc-cc/xingyu-tongpin-vrcx)、VRCX 分支、Tauri 客户端） | 仅限当前授权玩家本人（收提醒、看星轨相交与互相连上的星、给所在地图打分） |
 
     ---
 
@@ -19,7 +19,7 @@ info:
 
     使用本接口的客户端、世界组件和程序必须遵守以下规则，违反者将被停用标识：
 
-    1. **先登记标识**：开发自测阶段可使用 `dev-` 开头的标识（如 `dev-mywidget`）。正式发布前，请在 [GitHub 仓库](https://github.com/Duogeyu/xingyu-tongpin-api/issues) 提交标题为「**登记客户端**」的 Issue，写明：**名称、拟定的 `client` 标识、源码或世界地址、调用的接口、用途、联系方式**。核对通过加入白名单后方可正式使用。
+    1. **先登记标识**：开发自测阶段可使用 `dev-` 开头的标识（如 `dev-mywidget`）。正式发布前，请在 [GitHub 仓库](https://github.com/vrcc-cc/xingyu-tongpin-api/issues) 提交标题为「**登记客户端**」的 Issue，写明：**名称、拟定的 `client` 标识、源码或世界地址、调用的接口、用途、联系方式**。核对通过加入白名单后方可正式使用。
     2. **每次请求携带 `client`**：优先使用请求头 `X-Client: <标识>`；无法设置请求头的环境（如 VRChat Udon）可在开放数据接口使用 URL 参数 `?client=<标识>`。
     3. **遵守频率限制**：遇到 `429` 请至少等待 60 秒再试；开放数据每 5 分钟才更新一次，请做好本地缓存。
     4. **玩家数据安全与透明（调用玩家接口必守）**：
@@ -37,10 +37,10 @@ info:
     - **桌面客户端内置页面**（如 Tauri）：仅允许 `tauri://localhost`、`http(s)://tauri.localhost`、`null`（本地文件页面）以及开发时的 `http://localhost` / `http://127.0.0.1` 读取响应；普通外部网站无法跨域调用。
   contact:
     name: "GitHub Issues (登记客户端 / 问题反馈)"
-    url: "https://github.com/Duogeyu/xingyu-tongpin-api/issues"
+    url: "https://github.com/vrcc-cc/xingyu-tongpin-api/issues"
   license:
     name: "MIT（文档与示例）；开放数据需注明「数据来自星遇同频地图榜（vrcc.cc）」"
-    url: "https://github.com/Duogeyu/xingyu-tongpin-api/blob/main/LICENSE"
+    url: "https://github.com/vrcc-cc/xingyu-tongpin-api/blob/main/LICENSE"
 
 servers:
   - url: "https://vrcc.cc/api/v1"
