@@ -1,0 +1,243 @@
+openapi: 3.1.0
+info:
+  title: 星遇同频 · 客户端接口
+  version: "4"
+  description: |
+    星遇同频（https://vrcc.cc/match/）给 VRChat 客户端用的接口。使用前请读 README 的「使用要求」并登记客户端。
+
+    所有接口都在同一个地址 `https://vrcc.cc/api/match` 上，用查询参数区分：`?vrcx-pair`、`?vrcx-map`、`?vrcx-off` 三个是
+    POST，其余是带 `vrcx={token}` 的 GET。OpenAPI 的路径里不能带查询参数，下面把 POST 写成 `/api/match/vrcx-pair` 这样
+    的形式，实际请求是 `POST https://vrcc.cc/api/match?vrcx-pair`。
+
+    POST 的正文是 JSON 文字，请求头用 `Content-Type: text/plain`。
+  license:
+    name: MIT
+servers:
+  - url: https://vrcc.cc
+paths:
+  /api/match:
+    get:
+      summary: 拉提醒；带 view 时看列表或地图
+      description: |
+        不带 `view`：拉提醒（每分钟最多一次，两次之间至少 25 秒）。第一次不带 `since`，只返回 `last`。
+        带 `view`：`cross` 星轨相交、`mutual` 互相连上、`recent` 最近的提醒、`map` 一张地图（要带 `world`）。
+      parameters:
+        - { name: vrcx, in: query, required: true, description: 提醒令牌（48 位十六进制）, schema: { type: string, pattern: '^[0-9a-f]{48}$' } }
+        - { name: v, in: query, required: true, description: 协议版本，现在是 4, schema: { type: integer, example: 4 } }
+        - { name: client, in: query, required: true, description: 登记过的客户端标识，开发时用 dev- 开头的, schema: { type: string, pattern: '^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$' } }
+        - { name: since, in: query, description: 拉提醒时，上一次回答里的 last, schema: { type: integer } }
+        - { name: view, in: query, schema: { type: string, enum: [cross, mutual, recent, map] } }
+        - { name: mark, in: query, description: 'cross / recent：玩家看过了（红点消掉，记在账号上）', schema: { type: string, enum: ['1'] } }
+        - { name: world, in: query, description: 'map：地图 ID', schema: { $ref: '#/components/schemas/World' } }
+      responses:
+        '200':
+          description: 按 view 不同，是下面其中一种
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Pull'
+                  - $ref: '#/components/schemas/Old'
+                  - $ref: '#/components/schemas/Cross'
+                  - $ref: '#/components/schemas/Mutual'
+                  - $ref: '#/components/schemas/Recent'
+                  - $ref: '#/components/schemas/Map'
+        '400': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /api/match/vrcx-pair:
+    post:
+      summary: 用连接码连上，换提醒令牌（实际地址 ?vrcx-pair）
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: object
+              required: [code, client]
+              properties:
+                code: { type: string, description: '连接码，8 位，空格和横线会被忽略', example: ABCD2345 }
+                client: { type: string }
+      responses:
+        '200':
+          description: 连上了；之前的令牌失效
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token, me]
+                properties:
+                  token: { type: string, pattern: '^[0-9a-f]{48}$' }
+                  me: { $ref: '#/components/schemas/Me' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /api/match/vrcx-map:
+    post:
+      summary: 给玩家所在的地图打分（实际地址 ?vrcx-map）
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: object
+              required: [token, client, world, score]
+              properties:
+                token: { type: string }
+                client: { type: string }
+                world: { $ref: '#/components/schemas/World' }
+                score: { type: integer, minimum: 1, maximum: 10 }
+                text: { type: string, maxLength: 30, description: '一句短评；空字符串删掉短评；不带只改分' }
+      responses:
+        '200':
+          description: 打分后的地图
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Map' }
+        '400': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+        '502': { $ref: '#/components/responses/Error' }
+  /api/match/vrcx-off:
+    post:
+      summary: 断开（实际地址 ?vrcx-off）
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string }
+                client: { type: string }
+      responses:
+        '200':
+          description: 令牌失效，待收的提醒清掉
+          content:
+            application/json:
+              schema: { type: object, properties: { ok: { type: boolean, const: true } } }
+components:
+  responses:
+    Error:
+      description: |
+        出错。常见的 error：gone（令牌失效，404）、client_unknown（标识不在名单里，403）、too_soon（拉得太快，429，带 every）、
+        too_many（今天次数用完，429）、code（连接码不对，404）、busy（今天连接暂停，429）、map_not_went（还不能打分，403，带 need）、
+        map_elsewhere、map_off、xd_world_no（403）、xd_world（地图不对，400 / 404）、yq_words（短评没通过，400，带 why）、yq_empty（400）、
+        bad_request（400）。
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error: { type: string }
+              every: { type: integer, description: too_soon 时，多少秒后再来 }
+              need: { $ref: '#/components/schemas/Need' }
+              why: { type: string, description: yq_words 时，短评没通过的原因 }
+  schemas:
+    World: { type: string, pattern: '^wrld_[0-9a-f-]{36}$' }
+    Need: { type: [string, 'null'], enum: [verify, friend, go, null], description: 'verify 先验证 VRChat 账号；friend 先同意机器人的好友请求；go 要先在这张地图上待一会儿' }
+    Group: { type: string, enum: [G, W, Z, L, A], description: 星群：G 漫游、W 游戏、Z 创作、L 聊天、A 万象 }
+    Me:
+      type: object
+      properties:
+        star: { type: [integer, 'null'], description: 点亮编号 }
+        vrc: { type: [string, 'null'], description: 玩家自己的 VRChat 名字 }
+    Old:
+      type: object
+      properties: { old: { type: boolean, const: true } }
+      description: v 太旧
+    Pull:
+      type: object
+      required: [last, items, every, dot, latest]
+      properties:
+        last: { type: integer, description: 下次带作 since }
+        items:
+          type: array
+          maxItems: 5
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              title: { type: string }
+              body: { type: string }
+              at: { type: integer, description: 毫秒时间戳 }
+        every: { type: integer, description: 建议多少秒拉一次 }
+        dot: { type: integer, description: 星轨相交里没看过的人数 }
+        latest: { type: integer, description: 星遇同频 VRCX 脚本的最新版本，别的客户端可以不管 }
+    Cross:
+      type: object
+      required: [stars, n, why, me]
+      properties:
+        stars:
+          type: array
+          items:
+            type: object
+            properties:
+              n: { type: integer, description: '星的编号；网页 https://vrcc.cc/match/?tab=inbox&cross={n}' }
+              name: { type: string, description: 星位名 }
+              line: { type: string, description: 星位的一句描述 }
+              group: { $ref: '#/components/schemas/Group' }
+              star: { type: [integer, 'null'], description: 点亮编号，没公开时为 null }
+              intro: { type: string, description: 介绍的前 60 个字 }
+              vrc: { type: [string, 'null'], description: 只有互相连上时才有 VRChat 名字 }
+              linked: { type: boolean, description: 玩家连向了这颗星 }
+              mutual: { type: boolean, description: 互相连上 }
+              at: { type: integer }
+              fresh: { type: boolean, description: 还没看过 }
+        n: { type: integer }
+        why: { type: [string, 'null'], enum: [null, hide, verify, wait, queued, sent, gone, friend], description: 'null 正常；hide 不显示这一块；其余是用不了的原因' }
+        me: { $ref: '#/components/schemas/Me' }
+    Mutual:
+      type: object
+      required: [stars, n]
+      properties:
+        stars:
+          type: array
+          items:
+            type: object
+            properties:
+              n: { type: integer }
+              name: { type: string }
+              group: { $ref: '#/components/schemas/Group' }
+              star: { type: [integer, 'null'] }
+              vrc: { type: [string, 'null'], description: 对方的 VRChat 名字 }
+              vrcUser: { type: [string, 'null'], description: '对方的 VRChat 用户 ID（usr_…），对方验证过并公开时才有' }
+              at: { type: integer }
+        n: { type: integer }
+    Recent:
+      type: object
+      required: [items, read]
+      properties:
+        items:
+          type: array
+          maxItems: 5
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              title: { type: string }
+              body: { type: string }
+              url: { type: [string, 'null'], description: 'https://vrcc.cc 下的页面路径，以 /match/ 开头' }
+              at: { type: integer }
+        read: { type: integer, description: 玩家最后看过的那条的 id }
+    Map:
+      type: object
+      properties:
+        world: { $ref: '#/components/schemas/World' }
+        name: { type: [string, 'null'] }
+        board: { type: boolean, description: 在地图榜上 }
+        pending: { type: boolean, description: 加上了，还在审核 }
+        off: { type: boolean, description: 不给这位玩家看，不要显示 }
+        avg: { type: [number, 'null'] }
+        raters: { type: integer }
+        mine: { type: [integer, 'null'], description: 玩家打过的分 }
+        can: { type: boolean, description: 现在能不能打分 }
+        need: { $ref: '#/components/schemas/Need' }
+        words: { type: [string, 'null'], description: 玩家自己的短评 }
+        wordsOk: { type: [string, 'null'], enum: [wait, ok, hidden, null] }
+        img: { type: [string, 'null'], description: '地图榜上的封面，接在 https://vrcc.cc 后面' }
