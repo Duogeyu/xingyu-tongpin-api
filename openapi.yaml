@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.4.0"
+  version: "1.5.0"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -1040,6 +1040,31 @@ paths:
         default:
           $ref: "#/components/responses/Error"
 
+  /img/{id}:
+    get:
+      tags: ["网页上的动作"]
+      summary: "星友圈的图"
+      operationId: getPostImage
+      description: |
+        用 `GET /me/posts` 里 `img.url` 给的地址，不用自己拼，不需要请求头（`client` 在地址里）。签名只对拿到它的授权有效，10 分钟后过期。
+        每次打开都重新检查：授权还在、有 `posts` 权限、客户端没被停用、这条动态玩家现在还看得到；不满足返回 404。算一次读取（每个授权每天 1000 次）。
+        只有星友圈动态的配图和合照，不提供玩家星卡上的照片。
+      parameters:
+        - { name: id, in: path, required: true, description: "动态的 id", schema: { type: integer } }
+        - { name: client, in: query, required: true, schema: { type: string } }
+        - { name: g, in: query, required: true, description: "授权编号（签名的一部分）", schema: { type: integer } }
+        - { name: exp, in: query, required: true, description: "过期时间（毫秒）", schema: { type: integer } }
+        - { name: sig, in: query, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: "图片"
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+        "404":
+          description: "签名不对、过期、授权或权限没了，或者这条动态玩家已经看不到"
+        "429":
+          description: "今天的读取次数用完了"
   /me/today:
     get:
       tags: ["网页上的动作"]
@@ -1382,6 +1407,7 @@ paths:
       operationId: getPosts
       description: |
         **需要权限 `posts`。** 与网页「星友圈」相同（网页动作 `yq`）。会看到其他玩家的动态。第一页还带网页用的其他字段。
+        有图的动态，`img` 为 `{w, h, grid, url}`：`url` 是这张图的签名地址（`GET /img/{id}`），10 分钟内有效，可直接用作 `<img src>`。
       security:
         - client: []
           token: []
