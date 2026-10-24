@@ -1,17 +1,18 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.0.0"
+  version: "1.1.0"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
 
-    接口分为两类，均只返回网页端本来就公开或属于玩家本人的数据：
+    接口分为三类，均只返回网页端本来就公开或属于玩家本人的数据：
 
     | 类别 | 是否需要令牌 | 适用场景 | 数据范围 |
     | --- | --- | --- | --- |
     | **开放数据 · 地图榜** | 否（仅需 `client` 标识） | VRChat 世界内 Udon 组件、社区网站、群聊机器人 | 与公开的 [地图榜页面](https://vrcc.cc/maps/) 一致（仅含过审地图、均分、评分人数、名次、性能档位，不含评分人与短评） |
-    | **玩家个人接口** | 是（`Authorization: Bearer <令牌>`） | 桌面端工具（如 [VRCX 脚本](https://github.com/vrcc-cc/xingyu-tongpin-vrcx)、VRCX 分支、Tauri 客户端） | 仅限当前授权玩家本人（收提醒、看星轨相交与互相连上的星、给所在地图打分） |
+    | **玩家个人接口** | 是（`Authorization: Bearer <令牌>`，推荐用设备授权获取） | 桌面端工具（如 [VRCX 脚本](https://github.com/vrcc-cc/xingyu-tongpin-vrcx)、VRCX 分支、Tauri 客户端） | 仅限当前授权玩家本人（收提醒、看星轨相交与互相连上的星、给所在地图打分） |
+    | **用星遇同频登录** | 是（OAuth 2.0 授权码 + PKCE，网站自助登记 `client_id`） | 想让玩家「用星遇同频登录」的网站 | 仅含该网站专用的玩家编号 `sub`、星号、验证过的 VRChat 名字与 ID |
 
     ---
 
@@ -24,10 +25,16 @@ info:
     3. **遵守频率限制**：遇到 `429` 请至少等待 60 秒再试；开放数据每 5 分钟才更新一次，请做好本地缓存。
     4. **玩家数据安全与透明（调用玩家接口必守）**：
        - **源码公开**：玩家必须能看到你的客户端如何使用令牌。
-       - **直连官方**：连接码与令牌仅保存在玩家本机，只发往 `https://vrcc.cc/api/v1/`，严禁经过任何第三方服务器。
+       - **直连官方**：设备码、连接码与令牌仅保存在玩家本机，只发往 `https://vrcc.cc/api/v1/`，严禁经过任何第三方服务器。
        - **仅给本人看**：严禁转存、上传、汇总或分享玩家数据（尤其是互相连上者的 VRChat 名字）。
        - **手动打分**：地图打分必须由玩家本人主动点击触发，严禁自动或批量打分。
        - **标明第三方身份**：界面需明确说明并非星遇同频官方客户端，并提供随时可点的「断开连接」按钮。
+    5. **用星遇同频登录（网站必守）**：
+       - **密钥只放服务器**：`client_secret` 不得出现在网页、App 或代码仓库中；纯前端网站不用密钥，改用 PKCE。
+       - **核对 `state`**：回调中的 `state` 与发出的不一致时，不得换取令牌。
+       - **用 `sub` 认人**：以 `sub` 作为账号主键，不要用星号或 VRChat 名字。
+       - **说明用途**：在网站上写明拿到的星号、VRChat 名字与 ID 的用途。
+       - **不冒充官方**：网站名称与页面不得让人误以为是星遇同频官方。
 
     ---
 
@@ -35,6 +42,7 @@ info:
 
     - **原生程序 / 脚本**（Node.js、Rust、Python、C#、VRChat Udon 等）：直接发起请求，不受浏览器同源策略限制。
     - **桌面客户端内置页面**（如 Tauri）：仅允许 `tauri://localhost`、`http(s)://tauri.localhost`、`null`（本地文件页面）以及开发时的 `http://localhost` / `http://127.0.0.1` 读取响应；普通外部网站无法跨域调用。
+    - **`/oauth/token` 与 `/oauth/userinfo`**：允许任何来源跨域调用（`Access-Control-Allow-Origin: *`），且不需要 `X-Client`。
   contact:
     name: "GitHub Issues (登记客户端 / 问题反馈)"
     url: "https://github.com/vrcc-cc/xingyu-tongpin-api/issues"
@@ -53,8 +61,24 @@ tags:
       服务器边缘缓存最长 5 分钟更新一次。
   - name: "连接与授权"
     description: |
-      玩家在网页端「我的资料 → 在 VRCX 里提醒」获取 8 位一次性连接码（10 分钟有效），在客户端内换取 48 位十六进制访问令牌。
-      **每颗星同一时间只能保持一个客户端连接**，新连接会使旧令牌立即失效。
+      **推荐：设备授权（RFC 8628）。** 客户端调用 `POST /device/code` 拿到给玩家看的 `user_code` 与同意链接 `verification_uri_complete`；玩家在浏览器里看到客户端名字后点「同意」；客户端每 `interval` 秒调用 `POST /device/token`，同意后拿到 48 位十六进制访问令牌。
+      **旧方式（仍可用）**：玩家在网页端「我的资料 → 在 VRCX 里提醒」获取 8 位一次性连接码，客户端调用 `POST /connect` 换取令牌。
+
+      **每个客户端有自己的授权**，不会顶掉玩家 VRCX 脚本或别的客户端的连接。同一客户端、同一玩家只有一个授权（再次授权会让这个客户端之前的令牌失效）；每位玩家最多 10 个（第三方客户端与登录过的网站合计，超出时删除最久未使用的）。玩家可在「我的资料 → 第三方客户端」查看并单独断开。
+  - name: "用星遇同频登录"
+    description: |
+      OAuth 2.0 授权码流程（RFC 6749）+ PKCE（RFC 7636，仅 `S256`），供网站实现「用星遇同频登录」。
+
+      1. **登记网站**：登录星遇同频后在「我的资料 → 第三方客户端 → 开发者 → 我登记的网站」自助登记：网站名称（2–20 字，不得含「星遇同频」「VRCC」「VRChat」「官方」「管理员」）、网站地址（https）、1–5 个回调地址（https，或本机调试用 `http://localhost` / `http://127.0.0.1`；不得含 `#`；按 URL 规范化后精确匹配，如 `https://a.com` 存为 `https://a.com/`）。获得 `client_id`（`app_` + 16 位十六进制）与 `client_secret`（`sec_` + 48 位十六进制，仅显示一次，可重新生成，旧密钥立即失效）。每人最多 5 个网站。网站不经事先审核，同意页会提示玩家；管理员可停用违规网站。
+      2. **跳转授权**：浏览器打开 `https://vrcc.cc/oauth/authorize?response_type=code&client_id=app_…&redirect_uri=…&state=…&code_challenge=…&code_challenge_method=S256`。玩家（未登录时先登录）看到网站名、「登录后回到 <域名>」、网站会拿到的信息以及「这个网站由玩家自己登记，星遇同频没有审核」，点「继续」或「取消」。
+         - 继续：回到 `redirect_uri?code=<48 位十六进制>&state=…`（`code` 5 分钟内有效，只能用一次）；
+         - 取消：回到 `redirect_uri?error=access_denied&state=…`；
+         - `client_id` 未登记 / 已停用、`redirect_uri` 未登记：**不会跳回网站**，错误只显示在星遇同频页面上。
+         - PKCE：不用密钥的网站必须带 `code_challenge`（SHA-256 后 base64url，43 个字符）；用密钥的服务器网站可选，建议也带。
+      3. **换令牌**：`POST /oauth/token`。
+      4. **查询玩家**：`GET /oauth/userinfo`。
+
+      令牌只能读取 `userinfo`，不能调用提醒、星轨相交、打分等玩家个人接口。所有年龄（16 岁以上）的玩家都可使用。
   - name: "玩家个人数据"
     description: |
       需同时携带 `X-Client: <标识>` 与 `Authorization: Bearer <令牌>` 请求头（令牌严禁放入 URL）。
@@ -248,16 +272,118 @@ paths:
         default:
           $ref: "#/components/responses/Error"
 
+  /device/code:
+    post:
+      tags: ["连接与授权"]
+      summary: "设备授权：获取设备码与同意链接（推荐）"
+      operationId: deviceCode
+      description: |
+        设备授权（RFC 8628）第一步，不需要请求体，只需 `X-Client`。
+
+        - 客户端向玩家显示 `user_code`，并在浏览器中打开 `verification_uri_complete`（码已包含在链接中）；玩家也可以在「我的资料 → 第三方客户端」手动输入 `user_code`。
+        - 玩家需已登录星遇同频，会看到客户端名字（未登记的 `dev-` 标识显示「（测试中）」与「还没登记，只在测试」）及其权限：收提醒、看星轨相交和互相连上的星、给去过的地图打分，再点「同意」或「不同意」。
+        - `device_code` 仅由客户端保存，用于调用 `POST /device/token`，不要展示给玩家。
+        - 限制：每个网络地址每天最多获取 30 个（超限返回 `429 too_many`）。
+      responses:
+        '200':
+          description: "设备码与同意链接"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceCode"
+        '403':
+          $ref: "#/components/responses/ClientError"
+        '429':
+          $ref: "#/components/responses/RateLimitError"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /device/token:
+    post:
+      tags: ["连接与授权"]
+      summary: "设备授权：轮询换取访问令牌"
+      operationId: deviceToken
+      description: |
+        设备授权第二步：每隔 `interval` 秒（5 秒）调用一次，**不要更快**；`X-Client` 必须与获取设备码时相同。
+
+        - 等待中：`400 authorization_pending`，继续等待；
+        - 玩家不同意：`400 access_denied`，停止；
+        - 过期（10 分钟）、已换过令牌、客户端不一致或设备码不存在：`400 expired_token`，停止，需要时重新获取设备码；
+        - 玩家同意后：`200`，返回令牌（**只返回这一次**，之后再问是 `expired_token`）。
+
+        同一客户端再次为同一玩家授权，会让该客户端之前的令牌失效；不会影响 VRCX 脚本或其他客户端。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [device_code]
+              properties:
+                device_code:
+                  type: string
+                  pattern: "^[0-9a-f]{48}$"
+                  description: "POST /device/code 返回的 device_code"
+                  example: "9f2c4e1a7b3d5f6081726354a0b1c2d3e4f5a6b7c8d9e0f1"
+      responses:
+        '200':
+          description: "玩家已同意，返回访问令牌（仅一次）"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [access_token, token_type, me]
+                properties:
+                  access_token:
+                    type: string
+                    pattern: "^[0-9a-f]{48}$"
+                    description: "48 位十六进制令牌，仅保存在玩家本机，后续请求放入 Authorization: Bearer <access_token>"
+                    example: "a1b2c3d4e5f60123456789abcdef0123456789abcdef0123"
+                  token_type:
+                    type: string
+                    const: "Bearer"
+                  me:
+                    $ref: "#/components/schemas/Me"
+        '400':
+          description: |
+            尚未拿到令牌：
+            - `authorization_pending`：玩家还没点，过 `interval` 秒再问
+            - `access_denied`：玩家点了不同意
+            - `expired_token`：已过期、已换过、客户端不一致或设备码不存在
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              examples:
+                pending:
+                  summary: "等待玩家同意"
+                  value:
+                    error: "authorization_pending"
+                denied:
+                  summary: "玩家不同意"
+                  value:
+                    error: "access_denied"
+                expired:
+                  summary: "过期或已用过"
+                  value:
+                    error: "expired_token"
+        '403':
+          $ref: "#/components/responses/ClientError"
+        default:
+          $ref: "#/components/responses/Error"
+
   /connect:
     post:
       tags: ["连接与授权"]
-      summary: "用连接码换取访问令牌"
+      summary: "用连接码换取访问令牌（旧方式，仍可用）"
       operationId: connectClient
       description: |
+        **旧方式，仍然可用；新客户端请使用设备授权（`POST /device/code`）。**
+
         玩家在网页端「我的资料 → 在 VRCX 里提醒」生成 8 位一次性连接码（10 分钟内有效），客户端调用本接口换取 48 位十六进制 `token`。
 
         - 连接码中的空格、横线会被自动忽略，不区分大小写。
-        - **单连接机制**：连接成功后，该玩家此前在其他客户端或 VRCX 中的旧令牌立即失效，且玩家会收到站内通知（「刚在第三方客户端『…』里连上了」）。
+        - **每个客户端有自己的授权**：连接成功不会顶掉玩家的 VRCX 脚本或其他客户端；同一客户端再次连接会让它之前的令牌失效。玩家会收到站内通知（「刚在第三方客户端『…』里连上了」）。
         - 限制：每个网络地址每天最多尝试 30 次（超限返回 `429 too_many`）；全站当天错误码过多时暂停连接至次日（`429 busy`）。
       requestBody:
         required: true
@@ -311,7 +437,7 @@ paths:
       tags: ["连接与授权"]
       summary: "断开连接并销毁令牌"
       operationId: disconnectClient
-      description: "立即作废当前令牌，并清空该玩家待收取的客户端提醒队列。"
+      description: "立即作废当前令牌（只断开这一个授权，玩家的 VRCX 脚本和其他客户端不受影响）；该玩家没有任何连接后，待收取的客户端提醒队列也会清空。"
       security:
         - client: []
           token: []
@@ -340,11 +466,11 @@ paths:
       summary: "轮询新提醒（心跳）"
       operationId: pollNotifications
       description: |
-        在 VRChat 运行期间定期轮询新提醒（建议按响应中的 `every` 间隔，通常为 **60 秒**；两次请求间隔不得少于 **25 秒**）。
+        在 VRChat 运行期间定期轮询新提醒（建议按响应中的 `every` 间隔，通常为 **60 秒**；同一授权两次请求间隔不得少于 **25 秒**）。
 
         - **首次调用（不带 `since`）**：仅返回当前最新游标 `last` 和未读红点 `dot`，`items` 为空数组（不重放历史提醒）。
         - **后续调用（带上一次的 `last` 作为 `since`）**：返回 `since` 之后产生的新提醒（最多 5 条，按时间从旧到新排列，仅保留最近 24 小时）。
-        - 如果收到 `404 gone`，说明令牌已失效（玩家在网页断开、在别处重新连接、或删除了星），客户端应立即停止轮询并提示玩家重新连接。
+        - 如果收到 `404 gone`，说明令牌已失效（玩家在网页断开、同一客户端再次授权、或删除了星），客户端应立即停止轮询并重新走设备授权。
       security:
         - client: []
           token: []
@@ -744,6 +870,103 @@ paths:
         default:
           $ref: "#/components/responses/Error"
 
+  /oauth/token:
+    post:
+      tags: ["用星遇同频登录"]
+      summary: "用授权码换取令牌与玩家信息"
+      operationId: oauthToken
+      description: |
+        网站在回调中**核对 `state` 之后**，用 `code` 换取令牌。**不需要 `X-Client`**，允许任何来源跨域调用。
+
+        - 网站证明身份：`client_secret`（放在请求体，或 HTTP Basic `Authorization: Basic base64(client_id:client_secret)`），或 `code_verifier`（授权时带了 `code_challenge` 的必须提供）。授权时没带 `code_challenge` 的必须提供 `client_secret`。
+        - `redirect_uri` 必须与授权时完全一致。
+        - 同一玩家在同一网站再次登录，会让该网站之前拿到的令牌失效。
+        - 令牌只能调用 `GET /oauth/userinfo`。
+      security:
+        - {}
+        - clientBasic: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/OAuthTokenRequest"
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OAuthTokenRequest"
+      responses:
+        '200':
+          description: "换取成功"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [access_token, token_type, scope, user]
+                properties:
+                  access_token:
+                    type: string
+                    pattern: "^[0-9a-f]{48}$"
+                    description: "48 位十六进制令牌，只能用于 GET /oauth/userinfo"
+                    example: "b7e1c9d2a3f40123456789abcdef0123456789abcdef4567"
+                  token_type:
+                    type: string
+                    const: "Bearer"
+                  scope:
+                    type: string
+                    const: "profile"
+                  user:
+                    $ref: "#/components/schemas/OAuthUser"
+        '400':
+          description: |
+            - `invalid_request`：请求体格式错误
+            - `unsupported_grant_type`：`grant_type` 不是 `authorization_code`
+            - `invalid_grant`：`code` 错误、过期或已用过，`redirect_uri` 与授权时不一致，或 `code_verifier` 不对
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: "invalid_grant"
+        '401':
+          description: "`invalid_client`：`client_id` 未登记或已停用、密钥错误，或既没有密钥也没有使用 PKCE"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: "invalid_client"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /oauth/userinfo:
+    get:
+      tags: ["用星遇同频登录"]
+      summary: "查询登录的玩家"
+      operationId: oauthUserinfo
+      description: |
+        用 `POST /oauth/token` 拿到的令牌查询玩家，可用于确认玩家是否还连着、VRChat 名字是否有变化。**不需要 `X-Client`**，允许任何来源跨域调用。
+
+        收到 `401 invalid_token` 时，说明玩家在「我的资料 → 第三方客户端」断开了你的网站，或网站已被停用：把这位玩家当作已登出。
+      security:
+        - oauth: [profile]
+      responses:
+        '200':
+          description: "玩家信息"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthUser"
+        '401':
+          description: "令牌无效：玩家已断开该网站，或网站已停用（invalid_token）"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: "invalid_token"
+        default:
+          $ref: "#/components/responses/Error"
+
 components:
   securitySchemes:
     client:
@@ -759,7 +982,20 @@ components:
     token:
       type: http
       scheme: bearer
-      description: "调用 POST /connect 换取的 48 位十六进制令牌（仅限放入 Authorization 请求头，不可放入 URL）"
+      description: "设备授权（POST /device/token）或连接码（POST /connect）换取的 48 位十六进制令牌（仅限放入 Authorization 请求头，不可放入 URL）"
+    clientBasic:
+      type: http
+      scheme: basic
+      description: "用星遇同频登录：可用 HTTP Basic 传 client_id:client_secret（也可以放在请求体里）"
+    oauth:
+      type: oauth2
+      description: "用星遇同频登录（授权码 + PKCE S256）。网站在「我的资料 → 第三方客户端 → 开发者 → 我登记的网站」自助登记获取 client_id 与 client_secret"
+      flows:
+        authorizationCode:
+          authorizationUrl: "https://vrcc.cc/oauth/authorize"
+          tokenUrl: "https://vrcc.cc/api/v1/oauth/token"
+          scopes:
+            profile: "该网站专用的玩家编号 sub、星号、验证过的 VRChat 名字与 ID"
 
   responses:
     ClientError:
@@ -790,7 +1026,7 @@ components:
           example:
             error: "token"
     GoneError:
-      description: "令牌已失效（玩家已断开、在新客户端连上、或删除了星），请停止请求并提示玩家重新连接（gone）"
+      description: "令牌已失效（玩家已断开、同一客户端再次授权、或删除了星），请停止请求并让玩家重新授权（gone）"
       content:
         application/json:
           schema:
@@ -853,6 +1089,95 @@ components:
           type: [string, "null"]
           description: "玩家当前登记的 VRChat 名字"
           example: "MyVRCName"
+
+    DeviceCode:
+      type: object
+      required: [device_code, user_code, verification_uri, verification_uri_complete, expires_in, interval]
+      properties:
+        device_code:
+          type: string
+          pattern: "^[0-9a-f]{48}$"
+          description: "48 位十六进制设备码，客户端自己保存，用于 POST /device/token，不要展示给玩家"
+          example: "9f2c4e1a7b3d5f6081726354a0b1c2d3e4f5a6b7c8d9e0f1"
+        user_code:
+          type: string
+          pattern: "^[A-Z0-9]{4}-[A-Z0-9]{4}$"
+          description: "展示给玩家的码，玩家可在「我的资料 → 第三方客户端」手动输入"
+          example: "ABCD-2345"
+        verification_uri:
+          type: string
+          description: "玩家手动输入码的页面"
+          example: "https://vrcc.cc/match/?connect"
+        verification_uri_complete:
+          type: string
+          description: "已带上码的同意链接，在浏览器中打开即可"
+          example: "https://vrcc.cc/match/?connect=ABCD2345"
+        expires_in:
+          type: integer
+          description: "有效秒数"
+          example: 600
+        interval:
+          type: integer
+          description: "调用 POST /device/token 的间隔秒数"
+          example: 5
+
+    OAuthTokenRequest:
+      type: object
+      required: [grant_type, code, redirect_uri, client_id]
+      properties:
+        grant_type:
+          type: string
+          const: "authorization_code"
+        code:
+          type: string
+          pattern: "^[0-9a-f]{48}$"
+          description: "回调中带回的授权码（5 分钟内有效，只能用一次）"
+        redirect_uri:
+          type: string
+          description: "与授权时完全一致的回调地址"
+          example: "https://example.com/callback"
+        client_id:
+          type: string
+          pattern: "^app_[0-9a-f]{16}$"
+          example: "app_0123456789abcdef"
+        client_secret:
+          type: string
+          pattern: "^sec_[0-9a-f]{48}$"
+          description: "网站密钥（只在服务器上使用）；也可以改用 HTTP Basic"
+        code_verifier:
+          type: string
+          minLength: 43
+          maxLength: 128
+          description: "PKCE 原文；授权时带了 code_challenge 的必须提供"
+
+    OAuthUser:
+      type: object
+      required: [sub, star, vrc]
+      properties:
+        sub:
+          type: string
+          pattern: "^[0-9a-f]{32}$"
+          description: "该玩家在本网站的编号（固定不变，不同网站拿到的不同），请用它作为账号主键"
+          example: "3f9a1c7e5b2d4f6081a2b3c4d5e6f708"
+        star:
+          type: [integer, "null"]
+          description: "玩家在 /light/ 的星号（没有时为 null）"
+          example: 128
+        vrc:
+          description: "只在玩家在星遇同频验证过 VRChat 账号时返回，否则为 null"
+          oneOf:
+            - type: object
+              required: [id, name]
+              properties:
+                id:
+                  type: string
+                  description: "VRChat 用户 ID"
+                  example: "usr_01234567-89ab-cdef-0123-456789abcdef"
+                name:
+                  type: [string, "null"]
+                  description: "VRChat 显示名"
+                  example: "MyVRCName"
+            - type: "null"
 
     Notice:
       type: object
@@ -994,6 +1319,12 @@ components:
             - `yq_empty` (400)：短评仅含符号或空白
             - `bad_request` (400)：请求体或参数格式错误
             - `too_large` (413)：请求体超过 2 KB
+            - `authorization_pending` (400)：设备授权，玩家还没点同意
+            - `access_denied` (400)：设备授权，玩家点了不同意
+            - `expired_token` (400)：设备授权，设备码过期、已换过令牌、客户端不一致或不存在
+            - `invalid_request` / `unsupported_grant_type` / `invalid_grant` (400)：用星遇同频登录，换令牌请求有误
+            - `invalid_client` (401)：用星遇同频登录，网站未登记 / 已停用、密钥错误或缺少密钥与 PKCE
+            - `invalid_token` (401)：用星遇同频登录，玩家已断开该网站或网站已停用
         every:
           type: integer
           description: "too_soon 时返回，建议多少秒后再试"

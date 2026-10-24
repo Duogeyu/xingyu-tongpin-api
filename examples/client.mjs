@@ -1,7 +1,8 @@
 // 星遇同频开放接口的最小示例（Node 18 以上，没有依赖）。
 //
 //   node examples/client.mjs top                  地图榜前 10（开放数据，不用连接）
-//   node examples/client.mjs pair ABCD2345        用连接码连上，令牌存到本目录的 .token
+//   node examples/client.mjs login                设备授权：显示码、打开同意页，玩家同意后令牌存到本目录的 .token
+//   node examples/client.mjs pair ABCD2345        旧方式：用连接码连上
 //   node examples/client.mjs poll                 每分钟拉一次提醒（Ctrl+C 停）
 //   node examples/client.mjs crossings | mutuals | recent
 //   node examples/client.mjs map wrld_…           玩家所在的地图
@@ -13,6 +14,7 @@
 import { readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { spawn } from 'node:child_process';
 
 const API = 'https://vrcc.cc/api/v1/';
 const CLIENT = 'dev-example';
@@ -31,6 +33,32 @@ async function ask(path, { body, auth = false } = {}) {
 }
 const show = (d) => console.log(JSON.stringify(d, null, 2));
 
+// 设备授权：拿码 → 给玩家看、打开链接 → 每 interval 秒问一次 → 拿到令牌存本机
+async function login() {
+  const c = await ask('device/code', { body: {} });
+  console.log(`在浏览器里打开 ${c.verification_uri_complete}
+或在「我的资料 → 第三方客户端」输入 ${c.user_code}`);
+  const open = process.platform === 'win32' ? ['cmd', ['/c', 'start', '', c.verification_uri_complete]]
+    : [process.platform === 'darwin' ? 'open' : 'xdg-open', [c.verification_uri_complete]];
+  try { spawn(open[0], open[1], { stdio: 'ignore', detached: true }).on('error', () => {}).unref(); } catch {}
+  const end = Date.now() + c.expires_in * 1000;
+  while (Date.now() < end) {
+    await new Promise((ok) => setTimeout(ok, c.interval * 1000));
+    try {
+      const d = await ask('device/token', { body: { device_code: c.device_code } });
+      writeFileSync(TOKEN_FILE, d.access_token);
+      console.log('已连上', d.me);
+      return;
+    } catch (err) {
+      if (err.message === 'authorization_pending') continue;
+      if (err.message === 'access_denied') { console.log('玩家没有同意'); return; }
+      if (err.message === 'expired_token') break;
+      throw err;
+    }
+  }
+  console.log('码过期了，请重新运行 login');
+}
+
 async function poll() {
   let since = null, wait = 60;
   for (;;) {
@@ -41,7 +69,7 @@ async function poll() {
       wait = d.every || 60;
       if (d.dot) console.log(`星轨相交有 ${d.dot} 个新的`);
     } catch (err) {
-      if (err.message === 'gone') { console.log('连接已失效，请重新连接'); return; }
+      if (err.message === 'gone') { console.log('连接已失效，请重新运行 login'); return; }
       wait = err.status === 429 ? Math.max(60, (err.data && err.data.every) || 60) : 300;   // 429 或网络问题：退后再试
     }
     await new Promise((ok) => setTimeout(ok, wait * 1000));
@@ -52,12 +80,14 @@ const [cmd, a, b, c] = process.argv.slice(2);
 try {
   if (cmd === 'top') {
     for (const m of (await ask('boards/maps?limit=10')).maps) console.log(`${m.rank}. ${m.name}  ${m.avg} 分（${m.raters} 人）  ${m.page}`);
+  } else if (cmd === 'login') {
+    await login();
   } else if (cmd === 'pair') {
     const d = await ask('connect', { body: { code: a } });
     writeFileSync(TOKEN_FILE, d.token);
     console.log('已连上', d.me);
   } else if (!token()) {
-    console.log('先运行 pair 连接');
+    console.log('先运行 login 连接');
   } else if (cmd === 'poll') await poll();
   else if (cmd === 'crossings') show(await ask('me/crossings', { auth: true }));
   else if (cmd === 'mutuals') show(await ask('me/mutuals', { auth: true }));
