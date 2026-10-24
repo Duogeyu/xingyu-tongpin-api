@@ -9,8 +9,8 @@
 | 类别 | 是否需要令牌 | 适用场景 | 数据范围 |
 | --- | --- | --- | --- |
 | **开放数据** | 不用登录（仅需 `client` 标识） | VRChat 世界里的地图榜组件、社区网站、机器人 | 和公开的 [地图榜页面](https://vrcc.cc/maps/) 一样：过审地图、平均分、几人评分、名次、性能轻重（不含谁打的分和短评） |
-| **玩家自己的** | 需要令牌（`Authorization: Bearer`），玩家用**设备授权**同意后拿到 | 桌面客户端（如官方 [VRCX 脚本](https://github.com/vrcc-cc/xingyu-tongpin-vrcx)、VRCX 分支、Tauri 工具） | 只给这位玩家本人，按玩家同意的[权限](#权限scope)：收提醒、看星轨相交和互相连上的星、看星卡、看和打地图评分 |
-| **用星遇同频登录** | 网站自己登记拿 `client_id`，玩家点「继续」后拿到令牌 | 想让玩家「用星遇同频登录」的网站（像 Google 登录那样） | 默认只给这个网站专用的编号和星号；按要的[权限](#权限scope)还能给验证过的 VRChat 名字和 ID、星卡、地图评分、提醒 |
+| **玩家自己的** | 需要令牌（`Authorization: Bearer`），玩家用**设备授权**同意后拿到 | 桌面客户端（如官方 [VRCX 脚本](https://github.com/vrcc-cc/xingyu-tongpin-vrcx)、VRCX 分支、Tauri 工具） | 只给这位玩家本人，按玩家同意的[权限](#权限scope)：收提醒、看星轨相交和互相连上的星、看星卡、看和打地图评分、今天的星、连向我、连线、私聊、星友圈 |
+| **用星遇同频登录** | 网站自己登记拿 `client_id`，玩家点「继续」后拿到令牌 | 想让玩家「用星遇同频登录」的网站（像 Google 登录那样） | 默认只给这个网站专用的编号和星号；按要的[权限](#权限scope)还能给更多（VRChat 账号、星卡、地图评分、提醒、私聊等） |
 
 ## 目录
 
@@ -46,6 +46,14 @@
 | **玩家本人** | `GET` | [`/api/v1/me/maps`](#我打过分的地图get-apiv1memaps) | `client` + `Bearer`（`maps`） | 玩家在地图榜打过分的地图和短评（最近的在前） |
 | **玩家本人** | `GET` | [`/api/v1/me/maps/{world}`](#所在的地图get-apiv1memapsworld) | `client` + `Bearer`（`maps`） | 玩家当前所在地图在榜上的状态、本人评分与短评 |
 | **玩家本人** | `POST` | [`/api/v1/me/maps/{world}/rating`](#打分post-apiv1memapsworldrating) | `client` + `Bearer`（`maps.rate`） | 给当前所在的地图打分（1–10 分）及写短评（最多 30 字） |
+| **玩家本人** | `GET` | [`/api/v1/me/today`](#今天的星get-apiv1metoday) | `client` + `Bearer`（`today`） | 今天路过的星和这一轮还能连几颗 |
+| **玩家本人** | `GET` | [`/api/v1/me/inbox`](#连向我get-apiv1meinboxmark1) | `client` + `Bearer`（`inbox`） | 连向玩家的星 |
+| **玩家本人** | `POST` | [`/api/v1/me/links`](#连线post-apiv1melinks) | `client` + `Bearer`（`link`） | 替玩家连向一颗星（只在玩家自己点时） |
+| **玩家本人** | `GET` | [`/api/v1/me/chats`](#私聊列表get-apiv1mechats) | `client` + `Bearer`（`chat`） | 私聊列表和未读数 |
+| **玩家本人** | `GET` | [`/api/v1/me/chats/{n}`](#私聊记录get-apiv1mechatsn) | `client` + `Bearer`（`chat`） | 和一颗星的私聊记录 |
+| **玩家本人** | `POST` | [`/api/v1/me/chats/{n}`](#发私聊post-apiv1mechatsn) | `client` + `Bearer`（`chat.send`） | 替玩家发一条私聊（只在玩家自己点时） |
+| **玩家本人** | `GET` | [`/api/v1/me/posts`](#星友圈get-apiv1mepostsfallfriendminebefore) | `client` + `Bearer`（`posts`） | 星友圈动态 |
+| **玩家本人** | `POST` | [`/api/v1/me/posts`](#发星友圈post-apiv1meposts) | `client` + `Bearer`（`posts.write`） | 替玩家发一条文字动态（只在玩家自己点时） |
 | **登录** | `GET` | [`https://vrcc.cc/oauth/authorize`](#第一步把玩家送到星遇同频) | 浏览器跳转 | 用星遇同频登录：把玩家送过来，同意后带 `code` 回到你的网站 |
 | **登录** | `POST` | [`/api/v1/oauth/token`](#第二步换令牌-post-apiv1oauthtoken) | `client_id` + 密钥或 PKCE | 用 `code` 换令牌和玩家信息 |
 | **登录** | `GET` | [`/api/v1/oauth/userinfo`](#第三步再查一次玩家-get-apiv1oauthuserinfo) | `Bearer` | 再查一次这位玩家（玩家断开后返回 `401`） |
@@ -80,8 +88,10 @@
 
 5. **源码公开。** 玩家要能看到你的客户端拿令牌做了什么。
 6. **令牌只发给 `vrcc.cc`。** 设备码、连接码和令牌只存在玩家自己的电脑上，只发往 `https://vrcc.cc/api/v1/`，不经过你或任何第三方的服务器。
-7. **数据只给这位玩家看。** 不转存、不上传、不汇总、不分享，不拿来做统计、排行或别的玩家看得到的东西。**互相连上的人的 VRChat 名字尤其如此。**
-8. **打分只在玩家自己点的时候发。** 不自动打分，不批量打分。
+7. **数据只给这位玩家看。** 不转存、不上传、不汇总、不分享，不拿来做统计、排行或别的玩家看得到的东西。**互相连上的人的 VRChat 名字尤其如此**；今天的星、连向我、私聊、星友圈里别的玩家的资料和消息也一样。
+8. **写操作只在玩家自己点的时候发。** 打分（`maps.rate`）、连线（`link`）、发私聊（`chat.send`）、发星友圈（`posts.write`）都是玩家点一下发一次。不自动打分、不自动连线、不群发私聊、不批量发动态。
+
+   改资料、注销这类账号操作不在接口里，以后也不会放进来。
 9. **写明是第三方。** 界面上说清这是第三方客户端，不是星遇同频官方；连接、断开都由玩家自己操作，随时能断开。
 10. **只要用得到的权限。** 同意页会把你要的每一项都列出来，玩家不能只勾一部分，要得越多越容易被拒。
 
@@ -183,7 +193,7 @@ sequenceDiagram
 
 和「用 Google 登录」一样：玩家点你网站上的按钮，跳到星遇同频点「继续」，带着一个 `code` 回到你的网站；你的服务器用 `code` 换到玩家的编号 `sub` 和星号，要了 `vrchat` 权限的还有验证过的 VRChat 账号。
 
-1. 在「我的资料 → 第三方客户端 → 开发者 → 我登记的网站」登记，拿到 `client_id` 和 `client_secret`。
+1. 在「我的资料 → 第三方客户端 → 开发者 → 我登记的应用」登记，拿到 `client_id` 和 `client_secret`。
 2. 把玩家送到 `https://vrcc.cc/oauth/authorize?…`，带上 `state`、PKCE 和要的 `scope`（不写只有 `profile`）。
 3. 回到你的回调地址后，核对 `state`，用 `code` 调 `POST /api/v1/oauth/token`。
 4. 用 `user.sub` 找到或建立你网站上的账号。要过别的权限的，再带着令牌和 `X-Client: <client_id>` 调对应的 `me/…` 接口。
@@ -203,7 +213,7 @@ sequenceDiagram
 
 每个令牌都带一串权限，只能调权限里有的接口。多个权限用空格分开（逗号、`+` 也行）。
 
-| 权限 | 玩家在同意页看到 | 能用的接口 | 客户端不写时 | 网站能要 |
+| 权限 | 玩家在同意页看到 | 能用的接口 | 客户端不写时 | 自助登记的应用能要 |
 | --- | --- | --- | :---: | :---: |
 | `profile` | 识别你的登录身份，并读取你的星号 {星号}（没有星号时：识别你的登录身份（专属匿名编号）） | `oauth/userinfo` 的 `sub`、`star` | 总有 | 总有 |
 | `vrchat` | 查看你的 VRChat 名字「{名字}」和 ID（没验证时：查看你的 VRChat 名字和 ID（你还没验证，不会提供）） | `oauth/token`、`oauth/userinfo` 的 `vrc` | | ✓ |
@@ -211,14 +221,22 @@ sequenceDiagram
 | `maps` | 查看你在地图榜的评分和短评 | `GET me/maps`、`GET me/maps/{world}` | ✓ | ✓ |
 | `maps.rate` | 在你操作时，为你去过的地图打分 | `POST me/maps/{world}/rating` | ✓ | ✓ |
 | `notifications` | 接收你的星遇同频提醒 | `GET me/notifications`、`GET me/notifications/recent` | ✓ | ✓ |
-| `crossings` | 查看你的「星轨相交」 | `GET me/crossings` | ✓ | |
-| `mutuals` | 查看与你互相连上的星和他们的 VRChat 名字 | `GET me/mutuals` | ✓ | |
+| `crossings` | 查看你的「星轨相交」 | `GET me/crossings` | ✓ | ✓ |
+| `mutuals` | 查看与你互相连上的星和他们的 VRChat 名字 | `GET me/mutuals` | ✓ | ✓ |
+| `today` | 查看你今天路过的星（会看到其他玩家的资料） | `GET me/today` | | ✓ |
+| `inbox` | 查看连向你的星（会看到其他玩家的资料） | `GET me/inbox` | | ✓ |
+| `link` | 在你操作时，替你连向别的星 | `POST me/links` | | ✓ |
+| `chat` | 查看你的私聊（会看到对方发的消息） | `GET me/chats`、`GET me/chats/{n}` | | ✓ |
+| `chat.send` | 在你操作时，替你发私聊 | `POST me/chats/{n}` | | ✓ |
+| `posts` | 查看星友圈（会看到其他玩家的动态） | `GET me/posts` | | ✓ |
+| `posts.write` | 在你操作时，替你发星友圈 | `POST me/posts` | | ✓ |
 
-- **桌面客户端**在 `POST /device/code` 里用 `scope` 要，8 项都能要；不写就是 `profile notifications crossings mutuals maps maps.rate`（和我们的 VRCX 脚本一样）。旧的连接码连上的也是这一串。
-- **网站**在 `/oauth/authorize` 里用 `scope` 要；不写只有 `profile`。网站不能要 `crossings` 和 `mutuals`：那里面是别的玩家的名字和 VRChat 账号，他们没同意过，网站也没人审核。
-- **网站走设备授权**（`X-Client` 填 `client_id`）也一样：不写只有 `profile`，最多 `profile vrchat card maps maps.rate notifications`，要 `crossings` 或 `mutuals` 回答 `400 invalid_scope`。
+- **登记过的客户端**（开 Issue 登记的，或 `dev-`）在 `POST /device/code` 里用 `scope` 要，什么都能要；不写就是 `profile notifications crossings mutuals maps maps.rate`（和我们的 VRCX 脚本一样）。旧的连接码连上的也是这一串。
+- **自助登记的应用**（`app_…`，网站或客户端都行）也什么都能要，不写只有 `profile`：网站在 `/oauth/authorize` 里用 `scope` 要，客户端在 `POST /device/code` 里要（`X-Client` 填 `client_id`）。同意页会写明它是「玩家自行登记，未经星遇同频审核」，玩家的列表里标「未审核」。
+- 带「会看到其他玩家的……」的几项，同意页那一行就这么写，玩家知道你会看到别人的资料和消息。
 - **同意页把要的每一项列成一行**，不折叠，玩家不能只同意其中几项。所以只要用得到的。
 - 没有权限时调 `me/…`，回答 `403` `{"error": "scope", "need": "<缺的权限>"}`。
+- 改资料、注销这类账号操作没有权限，也不会有。
 
 ### 通用错误码
 
@@ -227,7 +245,7 @@ sequenceDiagram
 | `403` | `client_missing` | 请求没带 `client` 标识 |
 | `403` | `client_unknown` | `client` 不在登记白名单里，不是登记过的网站 `client_id`，也不是 `dev-` 开头 |
 | `403` | `client_off` | 这个 `client` 标识已被停用 |
-| `429` | `too_many` | 问得太快或今天次数用完，等至少一分钟后再试 |
+| `429` | `too_many` | 问得太快或今天次数用完（包括每个令牌自己每天的读、连线、私聊、发动态次数），等至少一分钟后再试 |
 | `401` | `token` | 玩家自己的接口没带令牌，或令牌格式不对 |
 | `403` | `client_mismatch` | 令牌不是发给这个 `X-Client` 的：每个令牌只能配拿到它的那个客户端或网站的标识用（先查这个，再查权限） |
 | `403` | `scope` | 令牌没有这个接口要的权限，`need` 写着缺哪个；要用就让玩家重新授权，这次把它要上 |
@@ -238,7 +256,7 @@ sequenceDiagram
 | `400` | `authorization_pending` | 设备授权：玩家还没点「同意连接」，过 `interval` 秒再问 |
 | `400` | `access_denied` | 设备授权：玩家点了「取消」 |
 | `400` | `expired_token` | 设备授权：码过期了（10 分钟）、已经换过令牌、不是这个客户端的，或没有这个码 |
-| `400` | `invalid_scope` | 设备授权：`scope` 里有不认识的权限，或网站要了网站不能要的 |
+| `400` | `invalid_scope` | 设备授权：`scope` 里有不认识的权限 |
 | `400` / `401` | `invalid_request`、`invalid_client`、`invalid_grant` 等 | 用星遇同频登录的错误，见「[换令牌](#第二步换令牌-post-apiv1oauthtoken)」 |
 | `401` | `invalid_token` | 用星遇同频登录：玩家断开了这个网站，或网站被停用 |
 
@@ -328,7 +346,7 @@ sequenceDiagram
 
 不写 `scope` 就是 `profile notifications crossings mutuals maps maps.rate`。`profile` 总会加上。
 
-登记过的网站也能用设备授权（`X-Client` 填 `client_id`），但权限和「用星遇同频登录」一样：不写只有 `profile`，最多 `profile vrchat card maps maps.rate notifications`。
+自助登记的应用也能用设备授权（`X-Client` 填 `client_id`）：不写只有 `profile`，什么权限都能要。
 
 **成功回答（`200`）：**
 
@@ -354,10 +372,10 @@ sequenceDiagram
 | `interval` | 多少秒问一次 `/device/token`（`5`） |
 | `scope` | 这次要的权限（按固定顺序，`profile` 在最前） |
 
-玩家要先登录星遇同频。打开链接后，玩家看到客户端的名字（没登记的 `dev-` 标识会写「（测试中）」和「还没登记，只在测试」；网站显示它登记的网站名称）和要的每一项权限（列在「连接后，它可以：」下面，一项一行），然后点「同意连接」或「取消」。
+玩家要先登录星遇同频。打开链接后，玩家看到客户端的名字（没登记的 `dev-` 标识会写「（测试中）」和「还没登记，只在测试」；自助登记的应用显示它登记的名称，下面写「玩家自行登记，未经星遇同频审核」）和要的每一项权限（列在「连接后，它可以：」下面，一项一行），然后点「同意连接」或「取消」。
 
 - **错误状态**：
-  - `400 invalid_scope`：`scope` 里有不认识的权限，或网站要了 `crossings` / `mutuals`
+  - `400 invalid_scope`：`scope` 里有不认识的权限
   - `429 too_many`：这个网络今天拿的码太多（每天最多 30 个）
 
 ---
@@ -703,6 +721,138 @@ sequenceDiagram
 
 ---
 
+### 网页上的动作
+
+下面这些接口做的事和网页一样：今天的星、连向我、连线、私聊、星友圈。规则和上限都是网页的（比如只能连今天这一轮的星、只能和互相连上的人私聊、发言要过检查、16–17 岁和 18 岁以上分开），回答也和网页一样。这里只写主要字段，其余字段跟网页一致，以后可能会加。
+
+另外每个令牌自己每天还有上限：这一批的读接口加起来 1000 次，连线 20 次，私聊 100 条，发星友圈 5 条，超了回答 `429 too_many`。
+
+**星卡（`cards[]`、`card`）的主要字段：**
+
+| 字段 | 说明 |
+| --- | --- |
+| `n` | 星的编号，连线、私聊都用它 |
+| `name` / `line` | 星位名和一句描述 |
+| `group` / `groupName` / `vibe` | 星群代号、星群名、氛围 |
+| `intro` | 星卡介绍 |
+| `about` | 关于我的问答（`[{q, a}]`） |
+| `star` | 点亮编号，对方没公开时是 `null` |
+| `verified` | 对方验证过 VRChat 账号 |
+| `scores` | 四个星群的成分 |
+| `linked` / `mutual` | 我连向了 TA / 已经互相连上 |
+| `vrc` / `vrcUser` | 对方的 VRChat 名字和用户 ID，**只在互相连上时**才有 |
+| `friends` | 共同的星友数（对方不公开时是 `null`） |
+
+---
+
+### 今天的星：`GET /api/v1/me/today`
+
+需要权限 `today`。和网页「今天」一样。
+
+```json
+{
+  "day": "#12",
+  "cards": [{ "n": 77, "name": "拾光旅人", "group": "G", "linked": false, "mutual": false, "why": "cross" }],
+  "round": { "at": 1792830000000, "next": 1792840800000, "used": 1, "max": 6, "remind": false }
+}
+```
+
+- `day`：第几轮（`#` 加序号）。
+- `cards`：这一轮路过的星；`why` 是为什么路过（比如 `cross` 星轨相交）。
+- `round`：这一轮开始的时间、下一轮的时间、已经连了几颗、最多能连几颗。
+
+---
+
+### 连向我：`GET /api/v1/me/inbox[?mark=1]`
+
+需要权限 `inbox`。和网页「连向我」一样。带 `?mark=1` 表示玩家现在看过了（记在账号上）。
+
+```json
+{ "cards": [{ "n": 77, "name": "拾光旅人", "at": 1792830000000, "mutual": false }], "counts": { "in": 3, "out": 5, "mutual": 2 }, "seen": 1792820000000, "cross": 1 }
+```
+
+- `cards`：连向玩家的星，最近的在前。
+- `counts`：连向我、我连向、互相连上的人数，还有未读通知、私聊等数字。
+- `seen`：上次看过的最新时间，`at` 比它新的就是新的。
+- `cross`：星轨相交的未读数。
+
+---
+
+### 连线：`POST /api/v1/me/links`
+
+需要权限 `link`。**只在玩家自己点「连线」时发。**
+
+```json
+{ "to": 77 }
+```
+
+- `to`：对方星的编号 `n`。
+- 只能连网页上能连的星：今天这一轮的、连回连向我的、星友的星友、星轨相交里的（带 `"via": "cross"`）、星友圈里的（带 `"via": "yq", "post": <动态 id>`）。
+- 成功：`{"mutual": true, "card": {…}}`。`mutual` 为 `true` 表示这一下就互相连上了。
+- 常见错误：`403 not_offered`（这颗星现在不能连）、`429 quota`（这一轮连满了）、`429 fof_day` / `yq_link_day` / `cross_link_day`（今天从这条路连的次数用完了）、`404 gone`（**对方不在了，不是令牌失效**）、`404 yq_gone`（那条动态没了）。
+
+---
+
+### 私聊列表：`GET /api/v1/me/chats`
+
+需要权限 `chat`。和网页「消息」一样，最近的在前。
+
+```json
+{ "threads": [{ "peer": { "n": 77, "name": "拾光旅人", "mutual": true, "vrc": "对方的 VRChat 名字" }, "last": { "id": 501, "text": "你好", "at": 1792830000000, "mine": false }, "unread": 1 }] }
+```
+
+---
+
+### 私聊记录：`GET /api/v1/me/chats/{n}`
+
+需要权限 `chat`。和星 `n` 的对话，旧的在前，一次一页。读了以后对方发的会标成已读。
+
+- `?before=<id>`：往前翻一页；`?after=<id>`：只要这条之后的；`?since=<id>`：从这条起到现在的全部（窗口里已经有的那几条，看有没有被撤回或隐藏）。
+- 回答：`{"msgs": [{id, text, at, kind, mine, check?}], "more": true, "peer": {…}, "max": …}`。`check` 只在自己发的上面：`wait` 检查中、`ok` 通过、`hidden` 没通过。
+- 只能看互相连上的人：不是的回答 `403 msg_not_mutual`。
+
+---
+
+### 发私聊：`POST /api/v1/me/chats/{n}`
+
+需要权限 `chat.send`。**只在玩家自己点「发送」时发，不群发。**
+
+```json
+{ "text": "你好" }
+```
+
+或者发一个网页上的表情：`{"sticker": "<表情名>"}`。
+
+- 只能发给互相连上的人：不是的回答 `403 msg_not_mutual`。
+- 文字和网页一样要过检查：`400 msg_words`（`why` 写原因）、`400 msg_empty`。
+- 成功：`{"msg": {id, text, at, kind, mine: true, check}}`。
+
+---
+
+### 星友圈：`GET /api/v1/me/posts[?f=all|friend|mine&before=…]`
+
+需要权限 `posts`。和网页「星友圈」一样。
+
+- `f`：`all` 全部（默认）、`friend` 星友的、`mine` 自己的。
+- `before`：往前翻页，填上一页最后一条的 `id`。
+- 回答：`{"posts": [{id, kind, text, vis, at, mine, img, lit, cmts, …}], "page": …}`，第一页还带网页用的其他字段。
+
+---
+
+### 发星友圈：`POST /api/v1/me/posts`
+
+需要权限 `posts.write`。**只在玩家自己点「发布」时发。** 只能发文字，不能带图。
+
+```json
+{ "kind": "text", "text": "今天在星夜茶屋认识了新朋友", "vis": "all" }
+```
+
+- `vis`：`all` 所有人、`mutual` 只给互相连上的人。
+- 文字和网页一样要过检查：`400 yq_words`（`why` 写原因）、`400 yq_empty`。
+- 成功：`{"ok": true, "post": {…}}`，检查通过后别人才看得到（`post.check`）。
+
+---
+
 ## 用星遇同频登录（网站）
 
 让玩家在你的网站上「用星遇同频登录」，像 Google 登录那样。用的是标准的 OAuth 2.0 授权码流程，加 PKCE。所有年龄的玩家（16 岁以上）都能用。
@@ -715,22 +865,22 @@ sequenceDiagram
 | `star` | `integer \| null` | 玩家在 `/light/` 的星号，没有时是 `null` |
 | `vrc` | `object \| null` | `{"id": "usr_…", "name": "VRChat 名字"}`，**要了 `vrchat` 权限**、而且玩家在星遇同频验证过 VRChat 账号时才有，否则是 `null` |
 
-不写 `scope` 时只有 `profile`：只有 `sub` 和 `star`。网站最多能要 `profile vrchat card maps maps.rate notifications`，见「[权限](#权限scope)」。要了 `card`、`maps`、`maps.rate`、`notifications` 的，可以用同一个令牌调对应的 `me/…` 接口（见下面「[用令牌调玩家自己的接口](#用令牌调玩家自己的接口)」）。
+不写 `scope` 时只有 `profile`：只有 `sub` 和 `star`。能要的权限见「[权限](#权限scope)」。要了别的权限的，可以用同一个令牌调对应的 `me/…` 接口（见下面「[用令牌调玩家自己的接口](#用令牌调玩家自己的接口)」）。
 
 ### 登记网站
 
-登录星遇同频，去「我的资料 → 第三方客户端 → 开发者 → 我登记的网站」，填：
+登录星遇同频，去「我的资料 → 第三方客户端 → 开发者 → 我登记的应用」。一次登记可以是网站，也可以是桌面客户端。填：
 
-- **网站名称**：2–20 个字，不能带「星遇同频」「VRCC」「VRChat」「官方」「管理员」。
+- **名称**：2–20 个字，不能带「星遇同频」「VRCC」「VRChat」「官方」「管理员」。
 - **网站地址**：`https://` 开头。
-- **回调地址**：1–5 个。要 `https://`；本机调试可以用 `http://localhost` 或 `http://127.0.0.1`。不能带 `#`。
+- **回调地址**：0–5 个。要 `https://`；本机调试可以用 `http://localhost` 或 `http://127.0.0.1`。不能带 `#`。**不填就只能走设备授权**，不能用「用星遇同频登录」。
 
 登记后拿到：
 
 - `client_id`：`app_` 加 16 位十六进制。
 - `client_secret`：`sec_` 加 48 位十六进制，**只显示这一次**。丢了可以重新生成，旧的立刻不能用。
 
-每人最多登记 5 个网站。我们不提前审核，玩家同意的页面上会写明「这个网站由玩家自己登记，星遇同频没有审核」；违反「[使用要求](#使用要求)」的网站，管理员会停用。
+每人最多登记 5 个。我们不提前审核：登录页写着「这个网站由玩家自行登记，未经星遇同频审核。请只在你信任的网站登录。」，设备授权的同意页写着「玩家自行登记，未经星遇同频审核」，玩家的列表里标「未审核」。违反「[使用要求](#使用要求)」的，管理员会停用。
 
 > [!NOTE]
 > 回调地址按浏览器 `URL` 的写法比对，必须完全一样。比如 `https://a.com` 会存成 `https://a.com/`，跳转时也要带 `https://a.com/`。
@@ -761,11 +911,11 @@ https://vrcc.cc/oauth/authorize?response_type=code
 | `code_challenge_method` | 带 `code_challenge` 时 | 只支持 `S256` |
 | `scope` | 否 | 要的权限，空格分开（逗号、`+` 也行）。不写只有 `profile`；能要的见「[权限](#权限scope)」 |
 
-玩家没登录的会先登录，然后看到：你的网站名、「登录后回到 你的域名」、你要的每一项权限（列在「登录后，该网站可以：」下面，一项一行，带玩家自己的星号和 VRChat 名字；没验证 VRChat 的写「查看你的 VRChat 名字和 ID（你还没验证，不会提供）」），以及「这个网站由玩家自己登记，星遇同频没有审核」。玩家点「继续」或「取消」。
+玩家没登录的会先登录，然后看到：你的网站名、「登录后回到 你的域名」、你要的每一项权限（列在「登录后，该网站可以：」下面，一项一行，带玩家自己的星号和 VRChat 名字；没验证 VRChat 的写「查看你的 VRChat 名字和 ID（你还没验证，不会提供）」），以及「这个网站由玩家自行登记，未经星遇同频审核。请只在你信任的网站登录。」。玩家点「继续」或「取消」。
 
 - 点「继续」：回到 `redirect_uri?code=<48 位十六进制>&state=<原样带回>`。`code` **5 分钟内有效，只能用一次**。
 - 点「取消」：回到 `redirect_uri?error=access_denied&state=<原样带回>`。
-- `client_id` 没登记、网站被停用、`redirect_uri` 不在登记的里面、`scope` 里有网站不能要或不认识的权限：**不会跳回你的网站**，错误只显示在星遇同频的页面上。
+- `client_id` 没登记、网站被停用、`redirect_uri` 不在登记的里面、`scope` 里有不认识的权限：**不会跳回你的网站**，错误只显示在星遇同频的页面上。
 
 ### 第二步：换令牌 `POST /api/v1/oauth/token`
 
@@ -864,6 +1014,7 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 | **用星遇同频登录（玩家点「继续」）** | 每位玩家每天 **100 次** |
 | **打分（`/me/maps/{world}/rating`）** | 和网页地图榜共用每天的打分与添图次数 |
 | **开放数据（地图榜）** | 服务器最多 **5 分钟**更新一次，问得再勤也是同一份 |
+| **网页上的动作，每个令牌每天** | 读（今天的星、连向我、私聊列表和记录、星友圈）加起来 **1000 次**；连线 **20 次**；私聊 **100 条**；发星友圈 **5 条**。网页自己的上限照样算 |
 
 ---
 
@@ -882,6 +1033,8 @@ node examples/client.mjs mutuals                  # 查看互相连上的星
 node examples/client.mjs recent                   # 查看最近的提醒
 node examples/client.mjs card                     # 查看自己的星卡（要 card 权限）
 node examples/client.mjs mymaps                   # 查看打过分的地图
+node examples/client.mjs today                    # 今天的星（要 today 权限）
+node examples/client.mjs chats                    # 私聊列表（要 chat 权限）
 node examples/client.mjs map wrld_…               # 查看当前所在地图
 node examples/client.mjs rate wrld_… 9 "很棒的图"  # 给地图打分和写短评
 node examples/client.mjs off                      # 断开连接并清除本地令牌
@@ -890,7 +1043,7 @@ node examples/client.mjs off                      # 断开连接并清除本地�
 [`examples/login-site.mjs`](examples/login-site.mjs) 是一个最小的「用星遇同频登录」网站（Node 18 以上，零外部依赖，带 `state` 和 PKCE）：
 
 ```bash
-# 先在「我登记的网站」里加回调地址 http://localhost:3000/callback
+# 先在「我登记的应用」里加回调地址 http://localhost:3000/callback
 CLIENT_ID=app_… CLIENT_SECRET=sec_… SCOPE="profile vrchat card" node examples/login-site.mjs
 # 打开 http://localhost:3000
 ```

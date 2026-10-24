@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.2.0"
+  version: "1.3.0"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -20,7 +20,7 @@ info:
 
     每个令牌都带一串权限（空格分隔，也接受逗号或 `+`），只能调用权限内的接口；缺少权限时返回 `403` `{"error": "scope", "need": "<权限>"}`。
 
-    | 权限 | 同意页显示 | 可用接口 | 客户端默认 | 网站可要 |
+    | 权限 | 同意页显示 | 可用接口 | 客户端默认 | 自助登记的应用可要 |
     | --- | --- | --- | :---: | :---: |
     | `profile` | 识别你的登录身份，并读取你的星号 {星号}（没有星号时：识别你的登录身份（专属匿名编号）） | `oauth/userinfo` 的 `sub`、`star` | 总有 | 总有 |
     | `vrchat` | 查看你的 VRChat 名字「{名字}」和 ID（没验证时：查看你的 VRChat 名字和 ID（你还没验证，不会提供）） | `oauth/token`、`oauth/userinfo` 的 `vrc` | | ✓ |
@@ -28,11 +28,19 @@ info:
     | `maps` | 查看你在地图榜的评分和短评 | `GET /me/maps`、`GET /me/maps/{world}` | ✓ | ✓ |
     | `maps.rate` | 在你操作时，为你去过的地图打分 | `POST /me/maps/{world}/rating` | ✓ | ✓ |
     | `notifications` | 接收你的星遇同频提醒 | `GET /me/notifications`、`GET /me/notifications/recent` | ✓ | ✓ |
-    | `crossings` | 查看你的「星轨相交」 | `GET /me/crossings` | ✓ | |
-    | `mutuals` | 查看与你互相连上的星和他们的 VRChat 名字 | `GET /me/mutuals` | ✓ | |
+    | `crossings` | 查看你的「星轨相交」 | `GET /me/crossings` | ✓ | ✓ |
+    | `mutuals` | 查看与你互相连上的星和他们的 VRChat 名字 | `GET /me/mutuals` | ✓ | ✓ |
+    | `today` | 查看你今天路过的星（会看到其他玩家的资料） | `GET /me/today` | | ✓ |
+    | `inbox` | 查看连向你的星（会看到其他玩家的资料） | `GET /me/inbox` | | ✓ |
+    | `link` | 在你操作时，替你连向别的星 | `POST /me/links` | | ✓ |
+    | `chat` | 查看你的私聊（会看到对方发的消息） | `GET /me/chats`、`GET /me/chats/{n}` | | ✓ |
+    | `chat.send` | 在你操作时，替你发私聊 | `POST /me/chats/{n}` | | ✓ |
+    | `posts` | 查看星友圈（会看到其他玩家的动态） | `GET /me/posts` | | ✓ |
+    | `posts.write` | 在你操作时，替你发星友圈 | `POST /me/posts` | | ✓ |
 
-    - 桌面客户端在 `POST /device/code` 的 `scope` 中指定，8 项均可；省略时为 `profile notifications crossings mutuals maps maps.rate`（旧的连接码授权同此）。
-    - 网站在 `/oauth/authorize` 的 `scope` 中指定；省略时只有 `profile`；不能要 `crossings`、`mutuals`（其中是其他玩家的名字与 VRChat 账号，他们没有同意过，网站也未经审核）。
+    - 登记过的客户端（登记名单里的或 `dev-`）在 `POST /device/code` 的 `scope` 中指定，全部可要；省略时为 `profile notifications crossings mutuals maps maps.rate`（旧的连接码授权同此）。
+    - 自助登记的应用（`app_…`，网站或客户端）也可要全部权限，省略时只有 `profile`：网站在 `/oauth/authorize` 的 `scope` 中指定，客户端在 `POST /device/code` 中指定（`X-Client` 填 `client_id`）。同意页注明「玩家自行登记，未经星遇同频审核」，玩家的列表中标「未审核」。
+    - 账号操作（改资料、注销等）不在接口中，以后也不会提供。
     - 同意页把所要的每一项列成一行，不折叠，也不能逐项取消：请只要用得到的权限。
 
     ---
@@ -48,7 +56,7 @@ info:
        - **源码公开**：玩家必须能看到你的客户端如何使用令牌。
        - **直连官方**：设备码、连接码与令牌仅保存在玩家本机，只发往 `https://vrcc.cc/api/v1/`，严禁经过任何第三方服务器。
        - **仅给本人看**：严禁转存、上传、汇总或分享玩家数据（尤其是互相连上者的 VRChat 名字）。
-       - **手动打分**：地图打分必须由玩家本人主动点击触发，严禁自动或批量打分。
+       - **写操作手动触发**：打分（`maps.rate`）、连线（`link`）、发私聊（`chat.send`）、发星友圈（`posts.write`）必须由玩家本人每次主动点击触发；严禁自动打分、自动连线、群发私聊或批量发动态。
        - **标明第三方身份**：界面需明确说明并非星遇同频官方客户端，并提供随时可点的「断开连接」按钮。
     5. **用星遇同频登录（网站必守）**：
        - **密钥只放服务器**：`client_secret` 不得出现在网页、App 或代码仓库中；纯前端网站不用密钥，改用 PKCE。
@@ -94,22 +102,29 @@ tags:
     description: |
       OAuth 2.0 授权码流程（RFC 6749）+ PKCE（RFC 7636，仅 `S256`），供网站实现「用星遇同频登录」。
 
-      1. **登记网站**：登录星遇同频后在「我的资料 → 第三方客户端 → 开发者 → 我登记的网站」自助登记：网站名称（2–20 字，不得含「星遇同频」「VRCC」「VRChat」「官方」「管理员」）、网站地址（https）、1–5 个回调地址（https，或本机调试用 `http://localhost` / `http://127.0.0.1`；不得含 `#`；按 URL 规范化后精确匹配，如 `https://a.com` 存为 `https://a.com/`）。获得 `client_id`（`app_` + 16 位十六进制）与 `client_secret`（`sec_` + 48 位十六进制，仅显示一次，可重新生成，旧密钥立即失效）。每人最多 5 个网站。网站不经事先审核，同意页会提示玩家；管理员可停用违规网站。
-      2. **跳转授权**：浏览器打开 `https://vrcc.cc/oauth/authorize?response_type=code&client_id=app_…&redirect_uri=…&state=…&code_challenge=…&code_challenge_method=S256`。玩家（未登录时先登录）看到网站名、「登录后回到 <域名>」、网站会拿到的信息以及「这个网站由玩家自己登记，星遇同频没有审核」，点「继续」或「取消」。
+      1. **登记网站**：登录星遇同频后在「我的资料 → 第三方客户端 → 开发者 → 我登记的应用」自助登记（一次登记可以是网站，也可以是桌面客户端）：名称（2–20 字，不得含「星遇同频」「VRCC」「VRChat」「官方」「管理员」）、网站地址（https）、0–5 个回调地址（不填则只能走设备授权，不能用星遇同频登录；https，或本机调试用 `http://localhost` / `http://127.0.0.1`；不得含 `#`；按 URL 规范化后精确匹配，如 `https://a.com` 存为 `https://a.com/`）。获得 `client_id`（`app_` + 16 位十六进制）与 `client_secret`（`sec_` + 48 位十六进制，仅显示一次，可重新生成，旧密钥立即失效）。每人最多 5 个。不经事先审核，同意页会提示玩家；管理员可停用违规应用。
+      2. **跳转授权**：浏览器打开 `https://vrcc.cc/oauth/authorize?response_type=code&client_id=app_…&redirect_uri=…&state=…&code_challenge=…&code_challenge_method=S256`。玩家（未登录时先登录）看到网站名、「登录后回到 <域名>」、所要的每一项权限以及「这个网站由玩家自行登记，未经星遇同频审核。请只在你信任的网站登录。」，点「继续」或「取消」。
          - 继续：回到 `redirect_uri?code=<48 位十六进制>&state=…`（`code` 5 分钟内有效，只能用一次）；
          - 取消：回到 `redirect_uri?error=access_denied&state=…`；
          - `client_id` 未登记 / 已停用、`redirect_uri` 未登记：**不会跳回网站**，错误只显示在星遇同频页面上。
          - PKCE：不用密钥的网站必须带 `code_challenge`（SHA-256 后 base64url，43 个字符）；用密钥的服务器网站可选，建议也带。
       3. **换令牌**：`POST /oauth/token`。
       4. **查询玩家**：`GET /oauth/userinfo`。
-      5. **调用玩家个人接口（可选）**：要了 `card`、`maps`、`maps.rate`、`notifications` 的网站，可从服务器带 `Authorization: Bearer <access_token>` 与 `X-Client: <client_id>` 调用对应的 `/me/…` 接口。网站登记期间 `client_id`（`app_…`）可当作 `X-Client`（或 `?client=`）用于所有 `/api/v1` 接口（含开放数据）；未登记或已删除的返回 `403 client_unknown`。令牌只能配自己的 `client_id` 使用，`X-Client` 不一致返回 `403 client_mismatch`。
-      6. **设备授权（可选）**：网站也可以用 `client_id` 当 `X-Client` 走设备授权（`POST /device/code`），权限上限与登录相同：省略时只有 `profile`，最多 `profile vrchat card maps maps.rate notifications`，要 `crossings` / `mutuals` 返回 `400 invalid_scope`；同意页显示网站登记的名称。
+      5. **调用玩家个人接口（可选）**：要了其他权限的网站，可从服务器带 `Authorization: Bearer <access_token>` 与 `X-Client: <client_id>` 调用对应的 `/me/…` 接口。网站登记期间 `client_id`（`app_…`）可当作 `X-Client`（或 `?client=`）用于所有 `/api/v1` 接口（含开放数据）；未登记或已删除的返回 `403 client_unknown`。令牌只能配自己的 `client_id` 使用，`X-Client` 不一致返回 `403 client_mismatch`。
+      6. **设备授权（可选）**：网站也可以用 `client_id` 当 `X-Client` 走设备授权（`POST /device/code`），省略 `scope` 时只有 `profile`，可要全部权限；同意页显示登记的名称与「玩家自行登记，未经星遇同频审核」。
 
-      授权时用 `scope` 指定权限，省略时只有 `profile`，最多 `profile vrchat card maps maps.rate notifications`；要了不能要或不认识的权限，错误只显示在星遇同频页面上，**不会跳回网站**。所有年龄（16 岁以上）的玩家都可使用。
+      授权时用 `scope` 指定权限，省略时只有 `profile`；要了不认识的权限，错误只显示在星遇同频页面上，**不会跳回网站**。所有年龄（16 岁以上）的玩家都可使用。
   - name: "玩家个人数据"
     description: |
       需同时携带 `X-Client: <标识>` 与 `Authorization: Bearer <令牌>` 请求头（令牌严禁放入 URL），且令牌须有对应权限（否则 `403 scope`）。
       用于拉取实时提醒、查看星轨相交与互相连上的星友、查看星卡与地图评分、给当前所在的 VRChat 地图打分。
+  - name: "网页上的动作"
+    description: |
+      今天的星、连向我、连线、私聊、星友圈：与网页执行同一个动作，网页的规则与上限原样适用（只能连今天这一轮等网页允许的星、只能和互相连上的人私聊、发言检查、16–17 岁与 18 岁以上分开等），回答与网页相同。这里列出主要字段，其余字段与网页一致，以后可能增加。
+
+      每个令牌另有每天的上限：本组读接口合计 1000 次、连线 20 次、私聊 100 条、发星友圈 5 条，超出返回 `429 too_many`。
+
+      **写接口（连线、发私聊、发星友圈）只能在玩家本人每次主动点击时调用，严禁自动连线、群发私聊或批量发动态。**
 
 security:
   - client: []
@@ -307,12 +322,12 @@ paths:
       description: |
         设备授权（RFC 8628）第一步。请求体可省略；需要指定权限时带 `scope`（省略时为 `profile notifications crossings mutuals maps maps.rate`，`profile` 总会加上）。
 
-        登记过的网站（`X-Client` 为 `app_…`）也可使用，但权限上限与「用星遇同频登录」相同：省略时只有 `profile`，最多 `profile vrchat card maps maps.rate notifications`。
+        自助登记的应用（`X-Client` 为 `app_…`）也可使用：省略 `scope` 时只有 `profile`，可要全部权限；同意页显示登记的名称与「玩家自行登记，未经星遇同频审核」。
 
         - 客户端向玩家显示 `user_code`，并在浏览器中打开 `verification_uri_complete`（码已包含在链接中）；玩家也可以在「我的资料 → 第三方客户端」手动输入 `user_code`。
-        - 玩家需已登录星遇同频，会看到客户端名字（未登记的 `dev-` 标识显示「（测试中）」与「还没登记，只在测试」；网站显示其登记的名称）及所要的每一项权限（列在「连接后，它可以：」下面，一项一行），再点「同意连接」或「取消」。
+        - 玩家需已登录星遇同频，会看到客户端名字（未登记的 `dev-` 标识显示「（测试中）」与「还没登记，只在测试」；自助登记的应用显示其登记的名称与「玩家自行登记，未经星遇同频审核」）及所要的每一项权限（列在「连接后，它可以：」下面，一项一行），再点「同意连接」或「取消」。
         - `device_code` 仅由客户端保存，用于调用 `POST /device/token`，不要展示给玩家。
-        - `scope` 中有不认识的权限，或网站要了 `crossings` / `mutuals`：`400 invalid_scope`。
+        - `scope` 中有不认识的权限：`400 invalid_scope`。
         - 限制：每个网络地址每天最多获取 30 个（超限返回 `429 too_many`）。
       requestBody:
         required: false
@@ -333,7 +348,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeviceCode"
         '400':
-          description: "scope 中有不认识的权限，或网站要了网站不能要的权限（invalid_scope）"
+          description: "scope 中有不认识的权限（invalid_scope）"
           content:
             application/json:
               schema:
@@ -1015,6 +1030,448 @@ paths:
         default:
           $ref: "#/components/responses/Error"
 
+  /me/today:
+    get:
+      tags: ["网页上的动作"]
+      summary: "今天的星"
+      operationId: getToday
+      description: |
+        **需要权限 `today`。** 与网页「今天」相同（网页动作 `recs`）。会看到其他玩家的资料。
+      security:
+        - client: []
+          token: []
+      responses:
+        '200':
+          description: "这一轮路过的星"
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                required: [day, cards, round]
+                properties:
+                  day:
+                    type: string
+                    description: "第几轮（# 加序号）"
+                    example: "#12"
+                  cards:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StarCard"
+                  round:
+                    type: object
+                    additionalProperties: true
+                    properties:
+                      at:
+                        type: integer
+                        description: "这一轮开始时间（毫秒）"
+                      next:
+                        type: integer
+                        description: "下一轮时间（毫秒）"
+                      used:
+                        type: integer
+                        description: "这一轮已连几颗"
+                      max:
+                        type: integer
+                        description: "这一轮最多能连几颗"
+                      remind:
+                        type: boolean
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        '429':
+          $ref: "#/components/responses/RateLimitError"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /me/inbox:
+    get:
+      tags: ["网页上的动作"]
+      summary: "连向我"
+      operationId: getInbox
+      description: |
+        **需要权限 `inbox`。** 与网页「连向我」相同（网页动作 `inbox`）。会看到其他玩家的资料。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - name: mark
+          in: query
+          description: "传 1 表示玩家现在看过了（记在账号上）"
+          schema:
+            type: string
+            enum: ["1"]
+      responses:
+        '200':
+          description: "连向玩家的星"
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                required: [cards, counts, seen, cross]
+                properties:
+                  cards:
+                    type: array
+                    description: "连向玩家的星，最近的在前"
+                    items:
+                      $ref: "#/components/schemas/StarCard"
+                  counts:
+                    type: object
+                    additionalProperties: true
+                    description: "连向我（in）、我连向（out）、互相连上（mutual）等数字"
+                  seen:
+                    type: integer
+                    description: "上次看过的最新时间（毫秒），at 比它新的是新的"
+                  cross:
+                    type: integer
+                    description: "星轨相交未读数"
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        '429':
+          $ref: "#/components/responses/RateLimitError"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /me/links:
+    post:
+      tags: ["网页上的动作"]
+      summary: "连线"
+      operationId: linkStar
+      description: |
+        **需要权限 `link`。只在玩家本人主动点击时调用。** 与网页连线相同（网页动作 `link`）。
+
+        只能连网页允许的星：今天这一轮的、连回连向我的、星友的星友、星轨相交里的（`via: "cross"`）、星友圈里的（`via: "yq"` 加 `post`）。
+        常见错误：`403 not_offered`、`429 quota`（这一轮连满）、`429 fof_day` / `yq_link_day` / `cross_link_day`、`404 gone`（**对方不在了，不是令牌失效**）、`404 yq_gone`、`400 bad_target`。
+      security:
+        - client: []
+          token: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to]
+              properties:
+                to:
+                  type: integer
+                  description: "对方星的编号 n"
+                  example: 77
+                via:
+                  type: string
+                  enum: ["cross", "yq"]
+                  description: "从哪连：cross 星轨相交，yq 星友圈"
+                post:
+                  type: integer
+                  description: "via 为 yq 时，那条动态的 id"
+      responses:
+        '200':
+          description: "已连上"
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                required: [mutual, card]
+                properties:
+                  mutual:
+                    type: boolean
+                    description: "这一下是否就互相连上了"
+                  card:
+                    $ref: "#/components/schemas/StarCard"
+        '400':
+          $ref: "#/components/responses/Error"
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        '429':
+          $ref: "#/components/responses/RateLimitError"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /me/chats:
+    get:
+      tags: ["网页上的动作"]
+      summary: "私聊列表"
+      operationId: getChats
+      description: |
+        **需要权限 `chat`。** 与网页「消息」相同（网页动作 `threads`），最近的在前。
+      security:
+        - client: []
+          token: []
+      responses:
+        '200':
+          description: "私聊列表"
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                required: [threads]
+                properties:
+                  threads:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+                      properties:
+                        peer:
+                          $ref: "#/components/schemas/Peer"
+                        last:
+                          $ref: "#/components/schemas/Msg"
+                        unread:
+                          type: integer
+                          description: "对方发来还没读的条数"
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        '429':
+          $ref: "#/components/responses/RateLimitError"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /me/chats/{n}:
+    get:
+      tags: ["网页上的动作"]
+      summary: "私聊记录"
+      operationId: getChat
+      description: |
+        **需要权限 `chat`。** 与星 `n` 的对话（网页动作 `msgs`），旧的在前，一次一页；读后对方的消息标为已读。只能看互相连上的人（否则 `403 msg_not_mutual`）。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - name: n
+          in: path
+          required: true
+          description: "对方星的编号"
+          schema:
+            type: integer
+        - name: before
+          in: query
+          description: "往前翻一页：这条 id 之前的"
+          schema:
+            type: integer
+        - name: after
+          in: query
+          description: "只要这条 id 之后的"
+          schema:
+            type: integer
+        - name: since
+          in: query
+          description: "从这条 id 起到现在的全部（用来核对已显示的消息有没有被撤回或隐藏）"
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "一页消息"
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                required: [msgs, more, peer]
+                properties:
+                  msgs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Msg"
+                  more:
+                    type: boolean
+                    description: "前面还有没有"
+                  peer:
+                    $ref: "#/components/schemas/Peer"
+                  max:
+                    type: integer
+                    description: "一条消息最多几个字"
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        '429':
+          $ref: "#/components/responses/RateLimitError"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: ["网页上的动作"]
+      summary: "发私聊"
+      operationId: sendChat
+      description: |
+        **需要权限 `chat.send`。只在玩家本人主动点击「发送」时调用，严禁群发。** 网页动作 `msg`。
+
+        只能发给互相连上的人（否则 `403 msg_not_mutual`）；文字与网页一样要过检查（`400 msg_words` 附 `why`、`400 msg_empty`）。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - name: n
+          in: path
+          required: true
+          description: "对方星的编号"
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  description: "消息文字"
+                  example: "你好"
+                sticker:
+                  type: string
+                  description: "或者发一个网页上的表情（与 text 二选一）"
+      responses:
+        '200':
+          description: "已发出"
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                required: [msg]
+                properties:
+                  msg:
+                    $ref: "#/components/schemas/Msg"
+        '400':
+          $ref: "#/components/responses/Error"
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        '429':
+          $ref: "#/components/responses/RateLimitError"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /me/posts:
+    get:
+      tags: ["网页上的动作"]
+      summary: "星友圈"
+      operationId: getPosts
+      description: |
+        **需要权限 `posts`。** 与网页「星友圈」相同（网页动作 `yq`）。会看到其他玩家的动态。第一页还带网页用的其他字段。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - name: f
+          in: query
+          description: "all 全部（默认）、friend 星友的、mine 自己的"
+          schema:
+            type: string
+            enum: ["all", "friend", "mine"]
+        - name: before
+          in: query
+          description: "往前翻页：上一页最后一条的 id"
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "一页动态"
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                required: [posts]
+                properties:
+                  posts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Post"
+                  page:
+                    type: integer
+                    description: "一页几条"
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        '429':
+          $ref: "#/components/responses/RateLimitError"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: ["网页上的动作"]
+      summary: "发星友圈"
+      operationId: writePost
+      description: |
+        **需要权限 `posts.write`。只在玩家本人主动点击「发布」时调用。** 网页动作 `yq-post`，只能发文字，不能带图。
+
+        文字与网页一样要过检查（`400 yq_words` 附 `why`、`400 yq_empty`）；检查通过后别人才看得到（`post.check`）。
+      security:
+        - client: []
+          token: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, text]
+              properties:
+                kind:
+                  type: string
+                  const: "text"
+                text:
+                  type: string
+                  example: "今天在星夜茶屋认识了新朋友"
+                vis:
+                  type: string
+                  enum: ["all", "mutual"]
+                  default: "all"
+                  description: "all 所有人、mutual 只给互相连上的人"
+      responses:
+        '200':
+          description: "已发出"
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                required: [ok, post]
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                  post:
+                    $ref: "#/components/schemas/Post"
+        '400':
+          $ref: "#/components/responses/Error"
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        '429':
+          $ref: "#/components/responses/RateLimitError"
+        default:
+          $ref: "#/components/responses/Error"
+
   /oauth/token:
     post:
       tags: ["用星遇同频登录"]
@@ -1134,7 +1591,7 @@ components:
       description: "用星遇同频登录：可用 HTTP Basic 传 client_id:client_secret（也可以放在请求体里）"
     oauth:
       type: oauth2
-      description: "用星遇同频登录（授权码 + PKCE S256）。网站在「我的资料 → 第三方客户端 → 开发者 → 我登记的网站」自助登记获取 client_id 与 client_secret"
+      description: "用星遇同频登录（授权码 + PKCE S256）。网站在「我的资料 → 第三方客户端 → 开发者 → 我登记的应用」自助登记获取 client_id 与 client_secret"
       flows:
         authorizationCode:
           authorizationUrl: "https://vrcc.cc/oauth/authorize"
@@ -1146,6 +1603,15 @@ components:
             maps: "查看你在地图榜的评分和短评：GET /me/maps、GET /me/maps/{world}"
             maps.rate: "在你操作时，为你去过的地图打分：POST /me/maps/{world}/rating"
             notifications: "接收你的星遇同频提醒：GET /me/notifications、/me/notifications/recent"
+            crossings: "查看你的「星轨相交」：GET /me/crossings"
+            mutuals: "查看与你互相连上的星和他们的 VRChat 名字：GET /me/mutuals"
+            today: "查看你今天路过的星（会看到其他玩家的资料）：GET /me/today"
+            inbox: "查看连向你的星（会看到其他玩家的资料）：GET /me/inbox"
+            link: "在你操作时，替你连向别的星：POST /me/links"
+            chat: "查看你的私聊（会看到对方发的消息）：GET /me/chats、GET /me/chats/{n}"
+            chat.send: "在你操作时，替你发私聊：POST /me/chats/{n}"
+            posts: "查看星友圈（会看到其他玩家的动态）：GET /me/posts"
+            posts.write: "在你操作时，替你发星友圈：POST /me/posts"
 
   responses:
     ClientError:
@@ -1260,8 +1726,8 @@ components:
       type: string
       description: |
         空格分隔的权限（请求时也接受逗号或 `+`），返回时按固定顺序、`profile` 在最前：
-        `profile` `vrchat` `card` `maps` `maps.rate` `notifications` `crossings` `mutuals`。
-        客户端可要全部 8 项；网站（登录或设备授权）最多 `profile vrchat card maps maps.rate notifications`。
+        `profile` `vrchat` `card` `maps` `maps.rate` `notifications` `crossings` `mutuals` `today` `inbox` `link` `chat` `chat.send` `posts` `posts.write`。
+        登记过的客户端与自助登记的应用都可要全部权限；省略时客户端为 `profile notifications crossings mutuals maps maps.rate`，自助登记的应用只有 `profile`。
       example: "profile notifications maps maps.rate"
 
     Card:
@@ -1346,6 +1812,141 @@ components:
           type: string
           description: "该地图在地图榜上的详情页"
           example: "https://vrcc.cc/maps/wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd"
+
+    StarCard:
+      type: object
+      additionalProperties: true
+      description: "与网页一致的星卡（这里只列主要字段，其余字段跟网页一致）"
+      properties:
+        n:
+          type: integer
+          description: "星的编号，连线、私聊都用它"
+          example: 77
+        name:
+          type: string
+          example: "拾光旅人"
+        line:
+          type: string
+        group:
+          $ref: "#/components/schemas/Group"
+        groupName:
+          type: string
+          example: "漫游星群"
+        vibe:
+          type: string
+          example: "安静"
+        intro:
+          type: string
+        about:
+          type: array
+          description: "关于我的问答"
+          items:
+            type: object
+            properties:
+              q:
+                type: string
+              a:
+                type: string
+        star:
+          type: [integer, "null"]
+          description: "点亮编号（对方没公开时为 null）"
+        verified:
+          type: boolean
+          description: "对方验证过 VRChat 账号"
+        scores:
+          type: [object, "null"]
+          description: "四个星群的成分"
+        linked:
+          type: boolean
+          description: "我连向了 TA"
+        mutual:
+          type: boolean
+          description: "已经互相连上"
+        vrc:
+          type: string
+          description: "对方的 VRChat 名字，只在互相连上时才有"
+        vrcUser:
+          type: string
+          description: "对方的 VRChat 用户 ID，只在互相连上且对方公开已验证时才有"
+        friends:
+          type: [integer, "null"]
+          description: "共同的星友数（对方不公开时为 null）"
+
+    Peer:
+      type: object
+      additionalProperties: true
+      description: "对方（私聊、动态里的人）"
+      properties:
+        n:
+          type: integer
+          example: 77
+        name:
+          type: string
+          example: "拾光旅人"
+        group:
+          $ref: "#/components/schemas/Group"
+        photo:
+          type: boolean
+        mutual:
+          type: boolean
+        vrc:
+          type: string
+          description: "互相连上时对方的 VRChat 名字"
+
+    Msg:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: integer
+          example: 501
+        text:
+          type: string
+          example: "你好"
+        at:
+          type: integer
+          example: 1792830000000
+        kind:
+          type: string
+          example: "chat"
+        mine:
+          type: boolean
+          description: "是不是我发的"
+        check:
+          type: string
+          enum: ["wait", "ok", "hidden"]
+          description: "只在自己发的上面：wait 检查中、ok 通过、hidden 没通过"
+
+    Post:
+      type: object
+      additionalProperties: true
+      description: "星友圈动态（这里只列主要字段，其余字段跟网页一致）"
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+          description: "text、截图等；官方动态为 official"
+        text:
+          type: string
+        vis:
+          type: string
+          enum: ["all", "mutual"]
+        at:
+          type: integer
+        mine:
+          type: boolean
+        check:
+          type: string
+          description: "只在自己的上面：wait 检查中、ok 通过、hidden 没通过或已撤下"
+        img:
+          type: [object, "null"]
+        lit:
+          type: integer
+          description: "点亮数"
+        cmts:
+          type: integer
+          description: "评论数"
 
     DeviceCode:
       type: object
@@ -1562,16 +2163,19 @@ components:
           description: |
             机器可读的错误码：
             - `client_missing` (403)：未携带 `client` 标识
-            - `client_unknown` (403)：`client` 不在登记名单中且非 `dev-` 开头
+            - `client_unknown` (403)：`client` 不在登记名单中，不是登记过的应用的 `client_id`，也非 `dev-` 开头
             - `client_off` (403)：该 `client` 标识已被停用
             - `token` (401)：未携带或格式错误的 `Authorization: Bearer` 令牌
             - `scope` (403)：令牌没有该接口要的权限（附带 `need`）
-            - `invalid_scope` (400)：设备授权的 `scope` 中有不认识的权限，或网站要了网站不能要的权限
+            - `invalid_scope` (400)：设备授权的 `scope` 中有不认识的权限
             - `client_mismatch` (403)：令牌不是发给这个 `X-Client` 的
-            - `gone` (404)：令牌已失效（断开、被新连接顶掉、星已删除）
+            - `gone` (404)：令牌已失效（断开、被新连接顶掉、星已删除）；连线时也表示对方不在了
             - `code` (404)：连接码错误、过期或已使用
             - `not_found` (404)：接口不存在或地图不在榜上
-            - `too_many` (429)：超出频率或每日次数限制
+            - `too_many` (429)：超出频率或每日次数限制（含每个令牌每天的读、连线、私聊、发动态上限）
+            - `not_offered` (403) / `quota` / `fof_day` / `yq_link_day` / `cross_link_day` (429) / `yq_gone` (404) / `bad_target` (400)：连线不被允许或次数用完
+            - `msg_not_mutual` (403)：私聊只能和互相连上的人
+            - `msg_words` (400，附 `why`) / `msg_empty` (400)：私聊文字没过检查或为空
             - `too_soon` (429)：提醒轮询间隔不足 25 秒（附带 `every`）
             - `busy` (429)：全站今日错误连接码过多，连接功能暂停至次日
             - `map_not_went` (403)：尚不满足打分条件（附带 `need`）

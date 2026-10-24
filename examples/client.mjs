@@ -5,7 +5,7 @@
 //                                                 （可以只要列出的权限；不写就是客户端默认的那一串）
 //   node examples/client.mjs pair ABCD2345        旧方式：用连接码连上
 //   node examples/client.mjs poll                 每分钟拉一次提醒（Ctrl+C 停）
-//   node examples/client.mjs crossings | mutuals | recent | card | mymaps
+//   node examples/client.mjs crossings | mutuals | recent | card | mymaps | today | chats
 //   node examples/client.mjs map wrld_…           玩家所在的地图
 //   node examples/client.mjs rate wrld_… 9 [短评]  打分（只在玩家自己要打的时候）
 //   node examples/client.mjs off                  断开
@@ -96,6 +96,8 @@ try {
   else if (cmd === 'recent') show(await ask('me/notifications/recent', { auth: true }));
   else if (cmd === 'card') show(await ask('me/card', { auth: true }));
   else if (cmd === 'mymaps') show(await ask('me/maps', { auth: true }));
+  else if (cmd === 'today') show(await ask('me/today', { auth: true }));
+  else if (cmd === 'chats') show(await ask('me/chats', { auth: true }));
   else if (cmd === 'map') show(await ask('me/maps/' + a, { auth: true }));
   else if (cmd === 'rate') show(await ask('me/maps/' + a + '/rating', { auth: true, body: { score: Number(b), ...(c === undefined ? {} : { text: c }) } }));
   else if (cmd === 'off') { await ask('disconnect', { auth: true, body: {} }); rmSync(TOKEN_FILE, { force: true }); console.log('已断开'); }

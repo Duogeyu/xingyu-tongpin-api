@@ -2,6 +2,14 @@
 
 接口要变的地方先写在这里，旧的写法会留一段时间再停。
 
+## 2026-10-25 · 第二批：今天的星、连向我、连线、私聊、星友圈
+
+- 新权限和接口，做的事和网页一样，网页的规则和上限照样算：`today`（`GET me/today`）、`inbox`（`GET me/inbox[?mark=1]`）、`link`（`POST me/links`）、`chat`（`GET me/chats`、`GET me/chats/{n}`）、`chat.send`（`POST me/chats/{n}`）、`posts`（`GET me/posts`）、`posts.write`（`POST me/posts`，只能发文字）。
+- 每个令牌每天另有上限：读 1000 次、连线 20 次、私聊 100 条、发星友圈 5 条，超了 `429 too_many`。
+- 写操作（`link`、`chat.send`、`posts.write`、`maps.rate`）只在玩家自己点的时候发，不自动连线、不群发。账号操作不在接口里，以后也不会有。
+- 「我登记的网站」改名「我登记的应用」：一次登记可以是网站也可以是客户端；回调地址可以不填（不填只能走设备授权）。
+- 自助登记的应用什么权限都能要（不写还是只有 `profile`），之前「网站不能要星轨相交和互相连上」的限制去掉了。同意页写「玩家自行登记，未经星遇同频审核」，玩家的列表里标「未审核」。
+
 ## 2026-10-25 · 按项授权（权限 scope）
 
 - 每个令牌带一串权限：`profile`（总有）、`vrchat`、`card`、`maps`、`maps.rate`、`notifications`、`crossings`、`mutuals`。调没有权限的 `me/…` 回答 `403` `{"error": "scope", "need": …}`。
