@@ -223,19 +223,19 @@ sequenceDiagram
 | `notifications` | 接收你的星遇同频提醒 | `GET me/notifications`、`GET me/notifications/recent` | ✓ | |
 | `crossings` | 查看你的「星轨相交」 | `GET me/crossings` | ✓ | ✓ |
 | `mutuals` | 查看与你互相连上的星和他们的 VRChat 名字 | `GET me/mutuals` | ✓ | ✓ |
-| `today` | 查看你今天路过的星（会看到其他玩家的资料） | `GET me/today` | | ✓ |
+| `today` | 查看今天路过你的星（会看到其他玩家的资料） | `GET me/today` | | ✓ |
 | `inbox` | 查看连向你的星（会看到其他玩家的资料） | `GET me/inbox` | | ✓ |
-| `link` | 在你操作时，替你连向别的星 | `POST me/links` | | ✓ |
-| `chat` | 查看你的私聊（会看到对方发的消息） | `GET me/chats`、`GET me/chats/{n}` | | ✓ |
-| `chat.send` | 在你操作时，替你发私聊 | `POST me/chats/{n}` | | ✓ |
+| `link` | 在你操作时，向其他星发起连线 | `POST me/links` | | ✓ |
+| `chat` | 查看你的私聊（会看到对方发来的消息） | `GET me/chats`、`GET me/chats/{n}` | | ✓ |
+| `chat.send` | 在你操作时，发送私聊消息 | `POST me/chats/{n}` | | ✓ |
 | `posts` | 查看星友圈（会看到其他玩家的动态） | `GET me/posts` | | ✓ |
-| `posts.write` | 在你操作时，替你发星友圈 | `POST me/posts` | | ✓ |
+| `posts.write` | 在你操作时，发布星友圈动态 | `POST me/posts` | | ✓ |
 
 **敏感权限只给审核过的。** 普通权限（`profile`、`card`、`maps`、`notifications`）谁都能要；打了 ✓ 的敏感权限只给：
 
 - **开 Issue 登记的客户端**：什么都能要。不写就是 `profile notifications crossings mutuals maps maps.rate`（和我们的 VRCX 脚本一样），旧的连接码连上的也是这一串。
 - **审核通过的自助登记应用**（`app_…`）：什么都能要，不写只有 `profile`。网站在 `/oauth/authorize` 里用 `scope` 要，客户端在 `POST /device/code` 里要（`X-Client` 填 `client_id`）。
-- **还没审核通过的自助登记应用**：敏感权限只有**登记人自己的账号**能同意，方便开发和测试；别的玩家点同意会被拒（`403 scope_unreviewed`），点取消照样带 `access_denied` 回去。同意页写明它是「玩家自行登记，未经星遇同频审核」，玩家的列表里标「未审核」。
+- **还没审核通过的自助登记应用**：敏感权限只有**登记人自己的账号**能同意，方便开发和测试；别的玩家打开时会看到「这个客户端尚未通过审核，不能申请敏感权限」（`403 scope_unreviewed`），点取消照样带 `access_denied` 回去。同意页写明它是「玩家自行登记，未经星遇同频审核」，玩家的列表里标「未审核」。
 - **`dev-` 标识**：只能要普通权限，不写就是 `profile notifications maps`；要敏感的，`device/code` 回答 `403 scope_unreviewed`。用连接码连上的也只有这三项。要开发敏感功能，自己登记一个应用，用登记人的账号测。
 
 每次调用都会再查一遍：审核被撤回，敏感接口当场回答 `403 scope_unreviewed`，`oauth/userinfo` 的 `vrc` 变成 `null`；普通接口照常能用。
@@ -378,7 +378,7 @@ sequenceDiagram
 | `interval` | 多少秒问一次 `/device/token`（`5`） |
 | `scope` | 这次要的权限（按固定顺序，`profile` 在最前） |
 
-玩家要先登录星遇同频。打开链接后，玩家看到客户端的名字（没登记的 `dev-` 标识会写「（测试中）」和「还没登记，只在测试」；自助登记的应用显示它登记的名称，下面写「玩家自行登记，未经星遇同频审核」）和要的每一项权限（顶上写一共需要几项普通权限、几项敏感权限；敏感的排在前面、标着「敏感」；超过三项的先收起，可以展开），然后点「同意连接」或「取消」。没审核的应用要了敏感权限，只有登记人自己能同意，别的玩家点同意会被拒，客户端一直等到 `expired_token`。
+玩家要先登录星遇同频。打开链接后，玩家看到客户端的名字（没登记的 `dev-` 标识会写「（测试中）」和「未登记客户端（仅测试用）」；自助登记的应用显示它登记的名称，下面写「玩家自行登记，未经星遇同频审核」）和要的每一项权限（顶上写一共需要几项普通权限、几项敏感权限；敏感的排在前面、标着「敏感」；超过三项的先收起，可以展开），然后点「同意连接」或「取消」。没审核的应用要了敏感权限，只有登记人自己能同意，别的玩家打开时会看到「这个客户端尚未通过审核，不能申请敏感权限」，客户端一直等到 `expired_token`。
 
 - **错误状态**：
   - `400 invalid_scope`：`scope` 里有不认识的权限

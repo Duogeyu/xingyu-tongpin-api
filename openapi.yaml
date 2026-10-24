@@ -30,13 +30,13 @@ info:
     | `notifications` | 接收你的星遇同频提醒 | `GET /me/notifications`、`GET /me/notifications/recent` | ✓ | |
     | `crossings` | 查看你的「星轨相交」 | `GET /me/crossings` | ✓ | ✓ |
     | `mutuals` | 查看与你互相连上的星和他们的 VRChat 名字 | `GET /me/mutuals` | ✓ | ✓ |
-    | `today` | 查看你今天路过的星（会看到其他玩家的资料） | `GET /me/today` | | ✓ |
+    | `today` | 查看今天路过你的星（会看到其他玩家的资料） | `GET /me/today` | | ✓ |
     | `inbox` | 查看连向你的星（会看到其他玩家的资料） | `GET /me/inbox` | | ✓ |
-    | `link` | 在你操作时，替你连向别的星 | `POST /me/links` | | ✓ |
-    | `chat` | 查看你的私聊（会看到对方发的消息） | `GET /me/chats`、`GET /me/chats/{n}` | | ✓ |
-    | `chat.send` | 在你操作时，替你发私聊 | `POST /me/chats/{n}` | | ✓ |
+    | `link` | 在你操作时，向其他星发起连线 | `POST /me/links` | | ✓ |
+    | `chat` | 查看你的私聊（会看到对方发来的消息） | `GET /me/chats`、`GET /me/chats/{n}` | | ✓ |
+    | `chat.send` | 在你操作时，发送私聊消息 | `POST /me/chats/{n}` | | ✓ |
     | `posts` | 查看星友圈（会看到其他玩家的动态） | `GET /me/posts` | | ✓ |
-    | `posts.write` | 在你操作时，替你发星友圈 | `POST /me/posts` | | ✓ |
+    | `posts.write` | 在你操作时，发布星友圈动态 | `POST /me/posts` | | ✓ |
 
     **敏感权限只给审核过的。** 普通权限（`profile` `card` `maps` `notifications`）都能要；敏感权限：
 
@@ -335,7 +335,7 @@ paths:
         自助登记的应用（`X-Client` 为 `app_…`）也可使用：省略 `scope` 时只有 `profile`；未审核时敏感权限只有登记人能同意，其他玩家点同意会被拒，客户端会一直等到 `expired_token`；同意页显示登记的名称与「玩家自行登记，未经星遇同频审核」。
 
         - 客户端向玩家显示 `user_code`，并在浏览器中打开 `verification_uri_complete`（码已包含在链接中）；玩家也可以在「我的资料 → 第三方客户端」手动输入 `user_code`。
-        - 玩家需已登录星遇同频，会看到客户端名字（未登记的 `dev-` 标识显示「（测试中）」与「还没登记，只在测试」；自助登记的应用显示其登记的名称与「玩家自行登记，未经星遇同频审核」）及所要的每一项权限（顶上写一共需要几项普通权限、几项敏感权限；敏感的排在前面、标着「敏感」；超过三项的先收起，可以展开），再点「同意连接」或「取消」。
+        - 玩家需已登录星遇同频，会看到客户端名字（未登记的 `dev-` 标识显示「（测试中）」与「未登记客户端（仅测试用）」；自助登记的应用显示其登记的名称与「玩家自行登记，未经星遇同频审核」）及所要的每一项权限（顶上写一共需要几项普通权限、几项敏感权限；敏感的排在前面、标着「敏感」；超过三项的先收起，可以展开），再点「同意连接」或「取消」。
         - `device_code` 仅由客户端保存，用于调用 `POST /device/token`，不要展示给玩家。
         - `scope` 中有不认识的权限：`400 invalid_scope`。
         - 限制：每个网络地址每天最多获取 30 个（超限返回 `429 too_many`）。
@@ -1617,13 +1617,13 @@ components:
             notifications: "接收你的星遇同频提醒：GET /me/notifications、/me/notifications/recent"
             crossings: "查看你的「星轨相交」：GET /me/crossings"
             mutuals: "查看与你互相连上的星和他们的 VRChat 名字：GET /me/mutuals"
-            today: "查看你今天路过的星（会看到其他玩家的资料）：GET /me/today"
+            today: "查看今天路过你的星（会看到其他玩家的资料）：GET /me/today"
             inbox: "查看连向你的星（会看到其他玩家的资料）：GET /me/inbox"
-            link: "在你操作时，替你连向别的星：POST /me/links"
-            chat: "查看你的私聊（会看到对方发的消息）：GET /me/chats、GET /me/chats/{n}"
-            chat.send: "在你操作时，替你发私聊：POST /me/chats/{n}"
+            link: "在你操作时，向其他星发起连线：POST /me/links"
+            chat: "查看你的私聊（会看到对方发来的消息）：GET /me/chats、GET /me/chats/{n}"
+            chat.send: "在你操作时，发送私聊消息：POST /me/chats/{n}"
             posts: "查看星友圈（会看到其他玩家的动态）：GET /me/posts"
-            posts.write: "在你操作时，替你发星友圈：POST /me/posts"
+            posts.write: "在你操作时，发布星友圈动态：POST /me/posts"
 
   responses:
     ClientError:
