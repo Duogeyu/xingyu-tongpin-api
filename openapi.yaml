@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
-  title: 星遇同频 · 开放接口 (Open API v1)
+  title: "星遇同频 · 开放接口 (Open API v1)"
   version: "1.0.0"
-  summary: VRChat 中文社区「星遇同频」开放数据与第三方客户端接口
+  summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
 
@@ -36,26 +36,26 @@ info:
     - **原生程序 / 脚本**（Node.js、Rust、Python、C#、VRChat Udon 等）：直接发起请求，不受浏览器同源策略限制。
     - **桌面客户端内置页面**（如 Tauri）：仅允许 `tauri://localhost`、`http(s)://tauri.localhost`、`null`（本地文件页面）以及开发时的 `http://localhost` / `http://127.0.0.1` 读取响应；普通外部网站无法跨域调用。
   contact:
-    name: GitHub Issues (登记客户端 / 问题反馈)
-    url: https://github.com/Duogeyu/xingyu-tongpin-api/issues
+    name: "GitHub Issues (登记客户端 / 问题反馈)"
+    url: "https://github.com/Duogeyu/xingyu-tongpin-api/issues"
   license:
-    name: MIT（文档与示例）；开放数据需注明「数据来自星遇同频地图榜（vrcc.cc）」
-    url: https://github.com/Duogeyu/xingyu-tongpin-api/blob/main/LICENSE
+    name: "MIT（文档与示例）；开放数据需注明「数据来自星遇同频地图榜（vrcc.cc）」"
+    url: "https://github.com/Duogeyu/xingyu-tongpin-api/blob/main/LICENSE"
 
 servers:
-  - url: https://vrcc.cc/api/v1
-    description: 星遇同频正式环境
+  - url: "https://vrcc.cc/api/v1"
+    description: "星遇同频正式环境"
 
 tags:
-  - name: 开放数据 · 地图榜
+  - name: "开放数据 · 地图榜"
     description: |
       所有人可见的地图榜公开数据，无需登录令牌。每次请求需携带 `X-Client` 请求头（或在 URL 中附加 `?client=`，方便 VRChat Udon `VRCStringDownloader` 调用）。
       服务器边缘缓存最长 5 分钟更新一次。
-  - name: 连接与授权
+  - name: "连接与授权"
     description: |
       玩家在网页端「我的资料 → 在 VRCX 里提醒」获取 8 位一次性连接码（10 分钟有效），在客户端内换取 48 位十六进制访问令牌。
       **每颗星同一时间只能保持一个客户端连接**，新连接会使旧令牌立即失效。
-  - name: 玩家个人数据
+  - name: "玩家个人数据"
     description: |
       需同时携带 `X-Client: <标识>` 与 `Authorization: Bearer <令牌>` 请求头（令牌严禁放入 URL）。
       用于拉取实时提醒、查看星轨相交与互相连上的星友、查询并给当前所在的 VRChat 地图打分。
@@ -66,146 +66,192 @@ security:
 paths:
   /boards/maps:
     get:
-      tags: [开放数据 · 地图榜]
-      summary: 获取地图榜排行
+      tags: ["开放数据 · 地图榜"]
+      summary: "获取地图榜排行"
       operationId: getMapsBoard
       description: |
         返回已通过审核且**满 5 人评分**的上榜地图，按总榜名次从高到低排列。
         适合用于 VRChat 世界内的排行榜展板、社区网站或机器人。
-      security: [{ client: [] }, { clientQuery: [] }]
+      security:
+        - client: []
+        - clientQuery: []
       parameters:
         - name: limit
           in: query
-          description: 返回条数（1–100，默认 20）
-          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+          description: "返回条数（1–100，默认 20）"
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
         - name: client
           in: query
-          description: 客户端标识（仅在无法发送 `X-Client` 请求头时使用，例如 VRChat Udon）
-          schema: { type: string, example: dev-mywidget }
+          description: "客户端标识（仅在无法发送 X-Client 请求头时使用，例如 VRChat Udon）"
+          schema:
+            type: string
+            example: "dev-mywidget"
       responses:
         '200':
-          description: 成功返回地图榜排行
+          description: "成功返回地图榜排行"
           content:
             application/json:
               schema:
                 type: object
                 required: [board, min, at, maps]
                 properties:
-                  board: { type: string, const: maps, description: 榜单标识 }
-                  min: { type: integer, description: 上总榜所需的最少评分人数, example: 5 }
-                  at: { type: integer, description: 榜单快照生成时间（毫秒时间戳）, example: 1792830000000 }
-                  maps: { type: array, items: { $ref: '#/components/schemas/BoardMap' } }
+                  board:
+                    type: string
+                    const: "maps"
+                    description: "榜单标识"
+                  min:
+                    type: integer
+                    description: "上总榜所需的最少评分人数"
+                    example: 5
+                  at:
+                    type: integer
+                    description: "榜单快照生成时间（毫秒时间戳）"
+                    example: 1792830000000
+                  maps:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/BoardMap"
               examples:
                 default:
-                  summary: 地图榜前 2 名示例
+                  summary: "地图榜前 2 名示例"
                   value:
-                    board: maps
+                    board: "maps"
                     min: 5
                     at: 1792830000000
                     maps:
-                      - world: wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd
-                        name: 星夜茶屋 Starry Tea House
-                        author: Shiori
+                      - world: "wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd"
+                        name: "星夜茶屋 Starry Tea House"
+                        author: "Shiori"
                         avg: 9.2
                         raters: 18
                         rank: 1
-                        weight: light
-                        page: https://vrcc.cc/maps/wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd
-                        img: https://vrcc.cc/maps/wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd.jpg
-                      - world: wrld_791ebf58-54ce-4d3a-a0a0-39f10f1b2088
-                        name: 琥珀海岸 Amber Coast
-                        author: Kaze
+                        weight: "light"
+                        page: "https://vrcc.cc/maps/wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd"
+                        img: "https://vrcc.cc/maps/wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd.jpg"
+                      - world: "wrld_791ebf58-54ce-4d3a-a0a0-39f10f1b2088"
+                        name: "琥珀海岸 Amber Coast"
+                        author: "Kaze"
                         avg: 8.8
                         raters: 9
                         rank: 2
-                        weight: mid
-                        page: https://vrcc.cc/maps/wrld_791ebf58-54ce-4d3a-a0a0-39f10f1b2088
-                        img: https://vrcc.cc/maps/wrld_791ebf58-54ce-4d3a-a0a0-39f10f1b2088.jpg
-        '403': { $ref: '#/components/responses/ClientError' }
-        '429': { $ref: '#/components/responses/RateLimitError' }
-        default: { $ref: '#/components/responses/Error' }
+                        weight: "mid"
+                        page: "https://vrcc.cc/maps/wrld_791ebf58-54ce-4d3a-a0a0-39f10f1b2088"
+                        img: "https://vrcc.cc/maps/wrld_791ebf58-54ce-4d3a-a0a0-39f10f1b2088.jpg"
+        '403':
+          $ref: "#/components/responses/ClientError"
+        '429':
+          $ref: "#/components/responses/RateLimitError"
+        default:
+          $ref: "#/components/responses/Error"
 
   /maps:
     get:
-      tags: [开放数据 · 地图榜]
-      summary: 批量查询多张地图
+      tags: ["开放数据 · 地图榜"]
+      summary: "批量查询多张地图"
       operationId: getMapsByIds
       description: |
         按逗号分隔的 VRChat 世界 ID（`wrld_…`）批量查询地图信息，**一次最多 20 张**。
         响应中只包含已在地图榜上通过审核的地图（未上榜的不出现在 `maps` 数组中，若评分不满 5 人则 `rank` 为 `null`）。
-      security: [{ client: [] }, { clientQuery: [] }]
+      security:
+        - client: []
+        - clientQuery: []
       parameters:
         - name: ids
           in: query
           required: true
-          description: 逗号分隔的地图 ID（`wrld_…`），最多 20 个
+          description: "逗号分隔的地图 ID（wrld_…），最多 20 个"
           schema:
             type: string
-            example: wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd,wrld_791ebf58-54ce-4d3a-a0a0-39f10f1b2088
+            example: "wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd,wrld_791ebf58-54ce-4d3a-a0a0-39f10f1b2088"
         - name: client
           in: query
-          description: 客户端标识（仅在无法发送 `X-Client` 请求头时使用）
-          schema: { type: string }
+          description: "客户端标识（仅在无法发送 X-Client 请求头时使用）"
+          schema:
+            type: string
       responses:
         '200':
-          description: 成功返回在榜上的地图列表
+          description: "成功返回在榜上的地图列表"
           content:
             application/json:
               schema:
                 type: object
                 required: [at, maps]
                 properties:
-                  at: { type: integer, description: 榜单快照时间（毫秒时间戳）, example: 1792830000000 }
-                  maps: { type: array, items: { $ref: '#/components/schemas/BoardMap' } }
+                  at:
+                    type: integer
+                    description: "榜单快照时间（毫秒时间戳）"
+                    example: 1792830000000
+                  maps:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/BoardMap"
         '400':
-          description: 参数格式不对或超过 20 个 ID（`bad_request`）
+          description: "参数格式不对或超过 20 个 ID（bad_request）"
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorBody' }
-              example: { error: bad_request }
-        '403': { $ref: '#/components/responses/ClientError' }
-        default: { $ref: '#/components/responses/Error' }
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: "bad_request"
+        '403':
+          $ref: "#/components/responses/ClientError"
+        default:
+          $ref: "#/components/responses/Error"
 
   /maps/{world}:
     get:
-      tags: [开放数据 · 地图榜]
-      summary: 查询单张地图
+      tags: ["开放数据 · 地图榜"]
+      summary: "查询单张地图"
       operationId: getMapById
-      description: 查询指定 VRChat 世界 ID 在地图榜上的公开信息。如果该地图不在榜上或未过审，返回 `404 not_found`。
-      security: [{ client: [] }, { clientQuery: [] }]
+      description: "查询指定 VRChat 世界 ID 在地图榜上的公开信息。如果该地图不在榜上或未过审，返回 `404 not_found`。"
+      security:
+        - client: []
+        - clientQuery: []
       parameters:
         - name: world
           in: path
           required: true
-          description: VRChat 世界 ID（仅 `wrld_…`，不含房间实例号）
-          schema: { $ref: '#/components/schemas/World' }
+          description: "VRChat 世界 ID（仅 wrld_…，不含房间实例号）"
+          schema:
+            $ref: "#/components/schemas/World"
         - name: client
           in: query
-          description: 客户端标识（仅在无法发送 `X-Client` 请求头时使用）
-          schema: { type: string }
+          description: "客户端标识（仅在无法发送 X-Client 请求头时使用）"
+          schema:
+            type: string
       responses:
         '200':
-          description: 该地图在榜上
+          description: "该地图在榜上"
           content:
             application/json:
               schema:
                 type: object
                 required: [at, map]
                 properties:
-                  at: { type: integer, example: 1792830000000 }
-                  map: { $ref: '#/components/schemas/BoardMap' }
+                  at:
+                    type: integer
+                    example: 1792830000000
+                  map:
+                    $ref: "#/components/schemas/BoardMap"
         '404':
-          description: 地图不在榜上（`not_found`）
+          description: "地图不在榜上（not_found）"
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorBody' }
-              example: { error: not_found }
-        default: { $ref: '#/components/responses/Error' }
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: "not_found"
+        default:
+          $ref: "#/components/responses/Error"
 
   /connect:
     post:
-      tags: [连接与授权]
-      summary: 用连接码换取访问令牌
+      tags: ["连接与授权"]
+      summary: "用连接码换取访问令牌"
       operationId: connectClient
       description: |
         玩家在网页端「我的资料 → 在 VRCX 里提醒」生成 8 位一次性连接码（10 分钟内有效），客户端调用本接口换取 48 位十六进制 `token`。
@@ -223,11 +269,11 @@ paths:
               properties:
                 code:
                   type: string
-                  description: 8 位一次性连接码（忽略空格与横线，不区分大小写）
-                  example: ABCD2345
+                  description: "8 位一次性连接码（忽略空格与横线，不区分大小写）"
+                  example: "ABCD2345"
       responses:
         '200':
-          description: 连接成功，返回访问令牌与玩家基本信息
+          description: "连接成功，返回访问令牌与玩家基本信息"
           content:
             application/json:
               schema:
@@ -236,49 +282,62 @@ paths:
                 properties:
                   token:
                     type: string
-                    pattern: '^[0-9a-f]{48}$'
-                    description: 48 位十六进制令牌，仅保存在玩家本机，后续请求放入 `Authorization: Bearer <token>`
-                    example: a1b2c3d4e5f60123456789abcdef0123456789abcdef0123
-                  me: { $ref: '#/components/schemas/Me' }
+                    pattern: "^[0-9a-f]{48}$"
+                    description: "48 位十六进制令牌，仅保存在玩家本机，后续请求放入 Authorization: Bearer <token>"
+                    example: "a1b2c3d4e5f60123456789abcdef0123456789abcdef0123"
+                  me:
+                    $ref: "#/components/schemas/Me"
         '404':
-          description: 连接码错误、已过期或已被使用（`code`）
+          description: "连接码错误、已过期或已被使用（code）"
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorBody' }
-              example: { error: code }
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: "code"
         '429':
-          description: 当前网络今日尝试次数用完（`too_many`）或全站今日错误过多暂停连接（`busy`）
+          description: "当前网络今日尝试次数用完（too_many）或全站今日错误过多暂停连接（busy）"
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorBody' }
-              example: { error: too_many }
-        default: { $ref: '#/components/responses/Error' }
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: "too_many"
+        default:
+          $ref: "#/components/responses/Error"
 
   /disconnect:
     post:
-      tags: [连接与授权]
-      summary: 断开连接并销毁令牌
+      tags: ["连接与授权"]
+      summary: "断开连接并销毁令牌"
       operationId: disconnectClient
-      description: 立即作废当前令牌，并清空该玩家待收取的客户端提醒队列。
-      security: [{ client: [], token: [] }]
+      description: "立即作废当前令牌，并清空该玩家待收取的客户端提醒队列。"
+      security:
+        - client: []
+          token: []
       responses:
         '200':
-          description: 已断开连接
+          description: "已断开连接"
           content:
             application/json:
               schema:
                 type: object
                 required: [ok]
                 properties:
-                  ok: { type: boolean, const: true }
-              example: { ok: true }
-        '401': { $ref: '#/components/responses/AuthError' }
-        default: { $ref: '#/components/responses/Error' }
+                  ok:
+                    type: boolean
+                    const: true
+              example:
+                ok: true
+        '401':
+          $ref: "#/components/responses/AuthError"
+        default:
+          $ref: "#/components/responses/Error"
 
   /me/notifications:
     get:
-      tags: [玩家个人数据]
-      summary: 轮询新提醒（心跳）
+      tags: ["玩家个人数据"]
+      summary: "轮询新提醒（心跳）"
       operationId: pollNotifications
       description: |
         在 VRChat 运行期间定期轮询新提醒（建议按响应中的 `every` 间隔，通常为 **60 秒**；两次请求间隔不得少于 **25 秒**）。
@@ -286,71 +345,99 @@ paths:
         - **首次调用（不带 `since`）**：仅返回当前最新游标 `last` 和未读红点 `dot`，`items` 为空数组（不重放历史提醒）。
         - **后续调用（带上一次的 `last` 作为 `since`）**：返回 `since` 之后产生的新提醒（最多 5 条，按时间从旧到新排列，仅保留最近 24 小时）。
         - 如果收到 `404 gone`，说明令牌已失效（玩家在网页断开、在别处重新连接、或删除了星），客户端应立即停止轮询并提示玩家重新连接。
-      security: [{ client: [], token: [] }]
+      security:
+        - client: []
+          token: []
       parameters:
         - name: since
           in: query
-          description: 上一次响应返回的 `last` 游标；首次轮询请省略此参数
-          schema: { type: integer, example: 1041 }
+          description: "上一次响应返回的 last 游标；首次轮询请省略此参数"
+          schema:
+            type: integer
+            example: 1041
       responses:
         '200':
-          description: 成功返回游标、新提醒与星轨相交未读数
+          description: "成功返回游标、新提醒与星轨相交未读数"
           content:
             application/json:
               schema:
                 type: object
                 required: [last, items, every, dot]
                 properties:
-                  last: { type: integer, description: 当前最新提醒 ID，下次轮询作为 `since` 传入, example: 1042 }
-                  items: { type: array, maxItems: 5, description: 新提醒列表（旧的在前）, items: { $ref: '#/components/schemas/Notice' } }
-                  every: { type: integer, description: 建议距离下次轮询的秒数, example: 60 }
-                  dot: { type: integer, description: 「星轨相交」中尚未查看的新人数，可用于显示红点, example: 2 }
+                  last:
+                    type: integer
+                    description: "当前最新提醒 ID，下次轮询作为 since 传入"
+                    example: 1042
+                  items:
+                    type: array
+                    maxItems: 5
+                    description: "新提醒列表（旧的在前）"
+                    items:
+                      $ref: "#/components/schemas/Notice"
+                  every:
+                    type: integer
+                    description: "建议距离下次轮询的秒数"
+                    example: 60
+                  dot:
+                    type: integer
+                    description: "「星轨相交」中尚未查看的新人数，可用于显示红点"
+                    example: 2
               examples:
                 withItems:
-                  summary: 收到新提醒
+                  summary: "收到新提醒"
                   value:
                     last: 1042
                     items:
                       - id: 1042
-                        title: 星遇同频
-                        body: 有人连向了你
+                        title: "星遇同频"
+                        body: "有人连向了你"
                         at: 1792830000000
                     every: 60
                     dot: 2
                 initial:
-                  summary: 首次调用（不带 since）
+                  summary: "首次调用（不带 since）"
                   value:
                     last: 1042
                     items: []
                     every: 60
                     dot: 0
-        '401': { $ref: '#/components/responses/AuthError' }
-        '404': { $ref: '#/components/responses/GoneError' }
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '404':
+          $ref: "#/components/responses/GoneError"
         '429':
-          description: 距离上次轮询不足 25 秒（`too_soon`）或超过频率限制（`too_many`）
+          description: "距离上次轮询不足 25 秒（too_soon）或超过频率限制（too_many）"
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorBody' }
-              example: { error: too_soon, every: 60 }
-        default: { $ref: '#/components/responses/Error' }
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: "too_soon"
+                every: 60
+        default:
+          $ref: "#/components/responses/Error"
 
   /me/notifications/recent:
     get:
-      tags: [玩家个人数据]
-      summary: 获取最近的提醒列表
+      tags: ["玩家个人数据"]
+      summary: "获取最近的提醒列表"
       operationId: getRecentNotifications
       description: |
         获取最近 24 小时内的最后 5 条提醒（**新的在前**），包含对应的站内跳转路径 `url`。
         与 `/me/crossings`、`/me/mutuals`、`/me/maps/{world}` 共享每颗星每天 300 次的查看额度。
-      security: [{ client: [], token: [] }]
+      security:
+        - client: []
+          token: []
       parameters:
         - name: mark
           in: query
-          description: 传 `1` 表示玩家当前已打开查看，服务器会将最新一条 ID 记录到账号的 `read` 字段（跨设备同步已读状态）
-          schema: { type: string, enum: ['1'] }
+          description: "传 1 表示玩家当前已打开查看，服务器会将最新一条 ID 记录到账号的 read 字段（跨设备同步已读状态）"
+          schema:
+            type: string
+            enum: ["1"]
       responses:
         '200':
-          description: 最近的提醒列表
+          description: "最近的提醒列表"
           content:
             application/json:
               schema:
@@ -361,37 +448,47 @@ paths:
                     type: array
                     items:
                       allOf:
-                        - $ref: '#/components/schemas/Notice'
+                        - $ref: "#/components/schemas/Notice"
                         - type: object
                           properties:
                             url:
-                              type: [string, 'null']
-                              description: 对应的星遇同频网页路径（以 `/match/` 开头，接在 `https://vrcc.cc` 后），无跳转时为 `null`
-                              example: /match/?tab=inbox
-                  read: { type: integer, description: 玩家最后已读的提醒 ID（大于该 ID 的可视作未读）, example: 1040 }
-        '401': { $ref: '#/components/responses/AuthError' }
-        '404': { $ref: '#/components/responses/GoneError' }
-        default: { $ref: '#/components/responses/Error' }
+                              type: [string, "null"]
+                              description: "对应的星遇同频网页路径（以 /match/ 开头，接在 https://vrcc.cc 后），无跳转时为 null"
+                              example: "/match/?tab=inbox"
+                  read:
+                    type: integer
+                    description: "玩家最后已读的提醒 ID（大于该 ID 的可视作未读）"
+                    example: 1040
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        default:
+          $ref: "#/components/responses/Error"
 
   /me/crossings:
     get:
-      tags: [玩家个人数据]
-      summary: 获取「星轨相交」列表
+      tags: ["玩家个人数据"]
+      summary: "获取「星轨相交」列表"
       operationId: getCrossings
       description: |
         获取与网页端「连向我 → 星轨相交」一致的擦肩记录列表（在 VRChat 同一房间偶遇过的星遇同频玩家）。
         - 传 `?mark=1` 会清除未读红点。
         - 在浏览器中打开某颗星可使用 `https://vrcc.cc/match/?tab=inbox&cross={n}`。
         - 注意检查返回的 `why` 字段：当 `why` 不为 `null` 时，请在界面上向玩家说明原因（或当 `why === 'hide'` 时隐藏整个模块）。
-      security: [{ client: [], token: [] }]
+      security:
+        - client: []
+          token: []
       parameters:
         - name: mark
           in: query
-          description: 传 `1` 表示玩家已查看，消除星轨相交红点
-          schema: { type: string, enum: ['1'] }
+          description: "传 1 表示玩家已查看，消除星轨相交红点"
+          schema:
+            type: string
+            enum: ["1"]
       responses:
         '200':
-          description: 星轨相交列表与状态
+          description: "星轨相交列表与状态"
           content:
             application/json:
               schema:
@@ -404,21 +501,55 @@ paths:
                       type: object
                       required: [n, name, line, group, star, intro, vrc, linked, mutual, at, fresh]
                       properties:
-                        n: { type: integer, description: '星的编号；网页直达地址：https://vrcc.cc/match/?tab=inbox&cross={n}', example: 77 }
-                        name: { type: string, description: 星位名称, example: 拾光旅人 }
-                        line: { type: string, description: 星位的一句话描述, example: 放慢脚步逛世界…… }
-                        group: { $ref: '#/components/schemas/Group' }
-                        star: { type: [integer, 'null'], description: '/light/ 点亮编号（对方未公开时为 null）', example: 31 }
-                        intro: { type: string, description: 匿名星卡介绍的前 60 个字, example: 平时喜欢在安静的世界拍照、听音乐，偶尔去小众展览转转。 }
-                        vrc: { type: [string, 'null'], description: 对方的 VRChat 名字（**仅在 `mutual: true` 双向连线后才返回**，否则为 `null`）, example: null }
-                        linked: { type: boolean, description: 我是否已经连向对方, example: true }
-                        mutual: { type: boolean, description: 是否已经双向连上, example: false }
-                        at: { type: integer, description: 相交发生的时间（毫秒时间戳）, example: 1792830000000 }
-                        fresh: { type: boolean, description: 是否为上次查看后新产生的记录, example: true }
-                  n: { type: integer, description: 列表中的星数量, example: 1 }
+                        n:
+                          type: integer
+                          description: "星的编号；网页直达地址：https://vrcc.cc/match/?tab=inbox&cross={n}"
+                          example: 77
+                        name:
+                          type: string
+                          description: "星位名称"
+                          example: "拾光旅人"
+                        line:
+                          type: string
+                          description: "星位的一句话描述"
+                          example: "放慢脚步逛世界……"
+                        group:
+                          $ref: "#/components/schemas/Group"
+                        star:
+                          type: [integer, "null"]
+                          description: "/light/ 点亮编号（对方未公开时为 null）"
+                          example: 31
+                        intro:
+                          type: string
+                          description: "匿名星卡介绍的前 60 个字"
+                          example: "平时喜欢在安静的世界拍照、听音乐，偶尔去小众展览转转。"
+                        vrc:
+                          type: [string, "null"]
+                          description: "对方的 VRChat 名字（仅在 mutual 为 true 双向连线后才返回，否则为 null）"
+                          example: null
+                        linked:
+                          type: boolean
+                          description: "我是否已经连向对方"
+                          example: true
+                        mutual:
+                          type: boolean
+                          description: "是否已经双向连上"
+                          example: false
+                        at:
+                          type: integer
+                          description: "相交发生的时间（毫秒时间戳）"
+                          example: 1792830000000
+                        fresh:
+                          type: boolean
+                          description: "是否为上次查看后新产生的记录"
+                          example: true
+                  n:
+                    type: integer
+                    description: "列表中的星数量"
+                    example: 1
                   why:
-                    type: [string, 'null']
-                    enum: [null, hide, verify, wait, queued, sent, gone, friend]
+                    type: [string, "null"]
+                    enum: [null, "hide", "verify", "wait", "queued", "sent", "gone", "friend"]
                     description: |
                       星轨相交不可用或为空的原因：
                       - `null`：正常开启
@@ -427,24 +558,30 @@ paths:
                       - `wait`：VRChat 账号正在等待验证
                       - `queued` / `sent`：机器人「VRCC的小助手」的好友请求排队中 / 已发出，等待玩家在 VRChat 内同意
                       - `gone` / `friend`：玩家在 VRChat 内删除了机器人好友，或尚未开启机器人好友
-                  me: { $ref: '#/components/schemas/Me' }
-        '401': { $ref: '#/components/responses/AuthError' }
-        '404': { $ref: '#/components/responses/GoneError' }
-        default: { $ref: '#/components/responses/Error' }
+                  me:
+                    $ref: "#/components/schemas/Me"
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        default:
+          $ref: "#/components/responses/Error"
 
   /me/mutuals:
     get:
-      tags: [玩家个人数据]
-      summary: 获取「互相连上」的星友列表
+      tags: ["玩家个人数据"]
+      summary: "获取「互相连上」的星友列表"
       operationId: getMutuals
       description: |
         返回与当前玩家已经**双向连线**的星友列表（按互相连上的时间倒序，最近连上的在前）。
         - 当对方已完成 VRChat 验证且隐私设置允许公开「已验证」时，会额外返回对方的 VRChat 用户 ID `vrcUser`（`usr_…`）。
         - **重要合规要求**：如果客户端提供「加好友」按钮，只能打开客户端自身的玩家资料页让玩家手动点击添加，**严禁由程序自动代替玩家向 VRChat 发送好友请求**。
-      security: [{ client: [], token: [] }]
+      security:
+        - client: []
+          token: []
       responses:
         '200':
-          description: 互相连上的星友列表
+          description: "互相连上的星友列表"
           content:
             application/json:
               schema:
@@ -457,51 +594,80 @@ paths:
                       type: object
                       required: [n, name, group, star, vrc, vrcUser, at]
                       properties:
-                        n: { type: integer, description: 星的编号, example: 77 }
-                        name: { type: string, description: 星位名称, example: 拾光旅人 }
-                        group: { $ref: '#/components/schemas/Group' }
-                        star: { type: [integer, 'null'], description: 点亮编号, example: 31 }
-                        vrc: { type: [string, 'null'], description: 对方的 VRChat 显示名, example: StarTraveler }
+                        n:
+                          type: integer
+                          description: "星的编号"
+                          example: 77
+                        name:
+                          type: string
+                          description: "星位名称"
+                          example: "拾光旅人"
+                        group:
+                          $ref: "#/components/schemas/Group"
+                        star:
+                          type: [integer, "null"]
+                          description: "点亮编号"
+                          example: 31
+                        vrc:
+                          type: [string, "null"]
+                          description: "对方的 VRChat 显示名"
+                          example: "StarTraveler"
                         vrcUser:
-                          type: [string, 'null']
-                          description: 对方的 VRChat 用户 ID（`usr_…`），仅在对方已验证且公开「已验证」标志时返回
-                          example: usr_01234567-89ab-cdef-0123-456789abcdef
-                        at: { type: integer, description: 互相连上的时间（毫秒时间戳）, example: 1792830000000 }
-                  n: { type: integer, description: 互相连上的总数, example: 1 }
-        '401': { $ref: '#/components/responses/AuthError' }
-        '404': { $ref: '#/components/responses/GoneError' }
-        default: { $ref: '#/components/responses/Error' }
+                          type: [string, "null"]
+                          description: "对方的 VRChat 用户 ID（usr_…），仅在对方已验证且公开「已验证」标志时返回"
+                          example: "usr_01234567-89ab-cdef-0123-456789abcdef"
+                        at:
+                          type: integer
+                          description: "互相连上的时间（毫秒时间戳）"
+                          example: 1792830000000
+                  n:
+                    type: integer
+                    description: "互相连上的总数"
+                    example: 1
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        default:
+          $ref: "#/components/responses/Error"
 
   /me/maps/{world}:
     get:
-      tags: [玩家个人数据]
-      summary: 查询当前所在地图的状态与我的评分
+      tags: ["玩家个人数据"]
+      summary: "查询当前所在地图的状态与我的评分"
       operationId: getMyMapStatus
       description: |
         查询玩家当前所在的 VRChat 世界在星遇同频地图榜上的状态、玩家本人的打分与短评，以及现在是否允许打分。
         - 如果返回的 `off` 为 `true`，说明该地图被下架或不对该玩家的年龄池开放，客户端**不要显示**打分面板。
         - 如果 `board`、`pending`、`off` 均为 `false`，说明地图榜上还没有这张图，玩家首次打分时会自动将它提交到地图榜审核。
-      security: [{ client: [], token: [] }]
+      security:
+        - client: []
+          token: []
       parameters:
         - name: world
           in: path
           required: true
-          description: 玩家当前所在的地图 ID（仅 `wrld_…`，不要带房间实例号）
-          schema: { $ref: '#/components/schemas/World' }
+          description: "玩家当前所在的地图 ID（仅 wrld_…，不要带房间实例号）"
+          schema:
+            $ref: "#/components/schemas/World"
       responses:
         '200':
-          description: 当前地图状态与本人打分信息
+          description: "当前地图状态与本人打分信息"
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/MyMap' }
-        '401': { $ref: '#/components/responses/AuthError' }
-        '404': { $ref: '#/components/responses/GoneError' }
-        default: { $ref: '#/components/responses/Error' }
+              schema:
+                $ref: "#/components/schemas/MyMap"
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        default:
+          $ref: "#/components/responses/Error"
 
   /me/maps/{world}/rating:
     post:
-      tags: [玩家个人数据]
-      summary: 给当前所在的地图打分与写短评
+      tags: ["玩家个人数据"]
+      summary: "给当前所在的地图打分与写短评"
       operationId: rateMyMap
       description: |
         为玩家当前所在的地图打分（1–10 分），可选附带一句不超过 30 字的短评。
@@ -511,13 +677,16 @@ paths:
           - 传入空字符串 `""`：删除已有的短评；
           - **不传 `text` 字段**：仅修改分数，保留原有短评不变。
         - 若该地图尚未收录进地图榜，首次打分会自动以该玩家为添加者提交收录。
-      security: [{ client: [], token: [] }]
+      security:
+        - client: []
+          token: []
       parameters:
         - name: world
           in: path
           required: true
-          description: 玩家当前所在的地图 ID（仅 `wrld_…`）
-          schema: { $ref: '#/components/schemas/World' }
+          description: "玩家当前所在的地图 ID（仅 wrld_…）"
+          schema:
+            $ref: "#/components/schemas/World"
       requestBody:
         required: true
         content:
@@ -530,19 +699,20 @@ paths:
                   type: integer
                   minimum: 1
                   maximum: 10
-                  description: 评分（1–10 的整数）
+                  description: "评分（1–10 的整数）"
                   example: 9
                 text:
                   type: string
                   maxLength: 30
-                  description: 一句短评（最多 30 字；传 `""` 删除短评；省略则只改分数）
-                  example: 光影很舒服，适合安静聊天
+                  description: "一句短评（最多 30 字；传空字符串删除短评；省略则只改分数）"
+                  example: "光影很舒服，适合安静聊天"
       responses:
         '200':
-          description: 打分成功，返回更新后的地图状态（同 `GET /me/maps/{world}`）
+          description: "打分成功，返回更新后的地图状态（同 GET /me/maps/{world}）"
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/MyMap' }
+              schema:
+                $ref: "#/components/schemas/MyMap"
         '400':
           description: |
             参数或短评未通过检查：
@@ -551,8 +721,11 @@ paths:
             - `bad_request`：分数不在 1–10 之间或 `world` 格式错误
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorBody' }
-              example: { error: yq_words, why: 请不要在短评里留联系方式 }
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: "yq_words"
+                why: "请不要在短评里留联系方式"
         '403':
           description: |
             当前不允许打分：
@@ -561,10 +734,15 @@ paths:
             - `map_off` / `xd_world_no`：该地图已关闭评分或不对当前玩家开放
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorBody' }
-              example: { error: map_not_went, need: go }
-        '429': { $ref: '#/components/responses/RateLimitError' }
-        default: { $ref: '#/components/responses/Error' }
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: "map_not_went"
+                need: "go"
+        '429':
+          $ref: "#/components/responses/RateLimitError"
+        default:
+          $ref: "#/components/responses/Error"
 
 components:
   securitySchemes:
@@ -572,61 +750,78 @@ components:
       type: apiKey
       in: header
       name: X-Client
-      description: 已登记的客户端标识；开发自测阶段请使用 `dev-` 开头的标识（例如 `dev-example`）
+      description: "已登记的客户端标识；开发自测阶段请使用 dev- 开头的标识（例如 dev-example）"
     clientQuery:
       type: apiKey
       in: query
       name: client
-      description: 仅限开放数据接口：在无法设置请求头的环境（如 VRChat Udon）中，可将客户端标识放在 URL 查询参数 `?client=`
+      description: "仅限开放数据接口：在无法设置请求头的环境（如 VRChat Udon）中，可将客户端标识放在 URL 查询参数 ?client="
     token:
       type: http
       scheme: bearer
-      description: 调用 `POST /connect` 换取的 48 位十六进制令牌（仅限放入 `Authorization` 请求头，不可放入 URL）
+      description: "调用 POST /connect 换取的 48 位十六进制令牌（仅限放入 Authorization 请求头，不可放入 URL）"
 
   responses:
     ClientError:
-      description: 客户端标识缺失、未登记或已被停用（`client_missing` / `client_unknown` / `client_off`）
+      description: "客户端标识缺失、未登记或已被停用（client_missing / client_unknown / client_off）"
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/ErrorBody' }
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
           examples:
-            missing: { summary: 未携带 client 标识, value: { error: client_missing } }
-            unknown: { summary: 标识未登记且非 dev- 开头, value: { error: client_unknown } }
-            off: { summary: 该标识已被后台停用, value: { error: client_off } }
+            missing:
+              summary: "未携带 client 标识"
+              value:
+                error: "client_missing"
+            unknown:
+              summary: "标识未登记且非 dev- 开头"
+              value:
+                error: "client_unknown"
+            off:
+              summary: "该标识已被后台停用"
+              value:
+                error: "client_off"
     AuthError:
-      description: 未携带有效的 `Authorization: Bearer <令牌>` 请求头（`token`）
+      description: "未携带有效的 Authorization: Bearer <令牌> 请求头（token）"
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/ErrorBody' }
-          example: { error: token }
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+          example:
+            error: "token"
     GoneError:
-      description: 令牌已失效（玩家已断开、在新客户端连上、或删除了星），请停止请求并提示玩家重新连接（`gone`）
+      description: "令牌已失效（玩家已断开、在新客户端连上、或删除了星），请停止请求并提示玩家重新连接（gone）"
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/ErrorBody' }
-          example: { error: gone }
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+          example:
+            error: "gone"
     RateLimitError:
-      description: 请求过于频繁或今日额度已用完，请等待至少 60 秒后再试（`too_many`）
+      description: "请求过于频繁或今日额度已用完，请等待至少 60 秒后再试（too_many）"
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/ErrorBody' }
-          example: { error: too_many }
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+          example:
+            error: "too_many"
     Error:
-      description: 错误响应
+      description: "错误响应"
       content:
         application/json:
-          schema: { $ref: '#/components/schemas/ErrorBody' }
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
 
   schemas:
     World:
       type: string
-      pattern: '^wrld_[0-9a-f-]{36}$'
-      description: VRChat 世界 ID（`wrld_` 加 UUID）
-      example: wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd
+      pattern: "^wrld_[0-9a-f-]{36}$"
+      description: "VRChat 世界 ID（wrld_ 加 UUID）"
+      example: "wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd"
 
     Need:
-      type: [string, 'null']
-      enum: [verify, friend, go, null]
+      type: [string, "null"]
+      enum: ["verify", "friend", "go", null]
       description: |
         打分前置条件缺失原因：
         - `verify`：需要先在星遇同频验证 VRChat 账号
@@ -636,7 +831,7 @@ components:
 
     Group:
       type: string
-      enum: [G, W, Z, L, A]
+      enum: ["G", "W", "Z", "L", "A"]
       description: |
         所属星群代号：
         - `G`：漫游（观景 / 探索 / 拍照）
@@ -644,66 +839,135 @@ components:
         - `Z`：创作（建模 / 改模 / 开发）
         - `L`：聊天（陪伴 / 挂机 / 谈心）
         - `A`：万象（多面兼顾）
-      example: G
+      example: "G"
 
     Me:
       type: object
       required: [star, vrc]
       properties:
-        star: { type: [integer, 'null'], description: 玩家在 /light/ 的点亮编号（无编号时为 `null`）, example: 128 }
-        vrc: { type: [string, 'null'], description: 玩家当前登记的 VRChat 名字, example: MyVRCName }
+        star:
+          type: [integer, "null"]
+          description: "玩家在 /light/ 的点亮编号（无编号时为 null）"
+          example: 128
+        vrc:
+          type: [string, "null"]
+          description: "玩家当前登记的 VRChat 名字"
+          example: "MyVRCName"
 
     Notice:
       type: object
       required: [id, title, body, at]
       properties:
-        id: { type: integer, description: 提醒递增编号, example: 1042 }
-        title: { type: string, description: 提醒标题, example: 星遇同频 }
-        body: { type: string, description: 提醒正文, example: 有人连向了你 }
-        at: { type: integer, description: 产生时间（毫秒时间戳）, example: 1792830000000 }
+        id:
+          type: integer
+          description: "提醒递增编号"
+          example: 1042
+        title:
+          type: string
+          description: "提醒标题"
+          example: "星遇同频"
+        body:
+          type: string
+          description: "提醒正文"
+          example: "有人连向了你"
+        at:
+          type: integer
+          description: "产生时间（毫秒时间戳）"
+          example: 1792830000000
 
     BoardMap:
       type: object
       required: [world, name, author, avg, raters, rank, weight, page, img]
       properties:
-        world: { $ref: '#/components/schemas/World' }
-        name: { type: string, description: 地图名称, example: 星夜茶屋 Starry Tea House }
-        author: { type: [string, 'null'], description: 地图作者名称, example: Shiori }
-        avg: { type: [number, 'null'], description: 1–10 分的平均分（保留一位小数，无人评分时为 `null`）, example: 9.2 }
-        raters: { type: integer, description: 评分人数, example: 18 }
-        rank: { type: [integer, 'null'], description: 总榜名次（不满 5 人评分时为 `null`）, example: 1 }
+        world:
+          $ref: "#/components/schemas/World"
+        name:
+          type: string
+          description: "地图名称"
+          example: "星夜茶屋 Starry Tea House"
+        author:
+          type: [string, "null"]
+          description: "地图作者名称"
+          example: "Shiori"
+        avg:
+          type: [number, "null"]
+          description: "1–10 分的平均分（保留一位小数，无人评分时为 null）"
+          example: 9.2
+        raters:
+          type: integer
+          description: "评分人数"
+          example: 18
+        rank:
+          type: [integer, "null"]
+          description: "总榜名次（不满 5 人评分时为 null）"
+          example: 1
         weight:
-          type: [string, 'null']
-          enum: [light, mid, heavy, null]
-          description: 多小咕实测性能档位：`light` 轻量、`mid` 中等、`heavy` 较重，未测过为 `null`
-          example: light
-        page: { type: string, description: 该地图在星遇同频地图榜上的详情页网址, example: https://vrcc.cc/maps/wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd }
-        img: { type: [string, 'null'], description: 地图封面图网址, example: https://vrcc.cc/maps/wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd.jpg }
+          type: [string, "null"]
+          enum: ["light", "mid", "heavy", null]
+          description: "多小咕实测性能档位：light 轻量、mid 中等、heavy 较重，未测过为 null"
+          example: "light"
+        page:
+          type: string
+          description: "该地图在星遇同频地图榜上的详情页网址"
+          example: "https://vrcc.cc/maps/wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd"
+        img:
+          type: [string, "null"]
+          description: "地图封面图网址"
+          example: "https://vrcc.cc/maps/wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd.jpg"
 
     MyMap:
       type: object
       required: [world, name, board, pending, off, avg, raters, mine, can, need, words, wordsOk, img]
       properties:
-        world: { $ref: '#/components/schemas/World' }
-        name: { type: [string, 'null'], description: 地图名称, example: 星夜茶屋 Starry Tea House }
-        board: { type: boolean, description: 是否已正式在地图榜上展示, example: true }
-        pending: { type: boolean, description: 是否已提交收录、正在等待审核, example: false }
-        off: { type: boolean, description: 是否不给当前玩家看（为 `true` 时客户端应隐藏此地图卡片）, example: false }
-        avg: { type: [number, 'null'], description: 当前平均分（1–10，一位小数）, example: 9.2 }
-        raters: { type: integer, description: 当前评分人数, example: 18 }
-        mine: { type: [integer, 'null'], description: 我打过的分数（1–10，未打分时为 `null`）, example: 9 }
-        can: { type: boolean, description: 我现在是否可以给这张地图打分, example: true }
-        need: { $ref: '#/components/schemas/Need' }
-        words: { type: [string, 'null'], description: 我写的短评（未写时为 `null`）, example: 光影很舒服，适合安静聊天 }
+        world:
+          $ref: "#/components/schemas/World"
+        name:
+          type: [string, "null"]
+          description: "地图名称"
+          example: "星夜茶屋 Starry Tea House"
+        board:
+          type: boolean
+          description: "是否已正式在地图榜上展示"
+          example: true
+        pending:
+          type: boolean
+          description: "是否已提交收录、正在等待审核"
+          example: false
+        off:
+          type: boolean
+          description: "是否不给当前玩家看（为 true 时客户端应隐藏此地图卡片）"
+          example: false
+        avg:
+          type: [number, "null"]
+          description: "当前平均分（1–10，一位小数）"
+          example: 9.2
+        raters:
+          type: integer
+          description: "当前评分人数"
+          example: 18
+        mine:
+          type: [integer, "null"]
+          description: "我打过的分数（1–10，未打分时为 null）"
+          example: 9
+        can:
+          type: boolean
+          description: "我现在是否可以给这张地图打分"
+          example: true
+        need:
+          $ref: "#/components/schemas/Need"
+        words:
+          type: [string, "null"]
+          description: "我写的短评（未写时为 null）"
+          example: "光影很舒服，适合安静聊天"
         wordsOk:
-          type: [string, 'null']
-          enum: [wait, ok, hidden, null]
-          description: 我的短评审核状态：`wait` 审核中、`ok` 已通过、`hidden` 未通过、无短评时为 `null`
-          example: ok
+          type: [string, "null"]
+          enum: ["wait", "ok", "hidden", null]
+          description: "我的短评审核状态：wait 审核中、ok 已通过、hidden 未通过、无短评时为 null"
+          example: "ok"
         img:
-          type: [string, 'null']
-          description: 封面相对路径（接在 `https://vrcc.cc` 后面使用），无封面或不可见时为 `null`
-          example: /api/match?xdimg=wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd
+          type: [string, "null"]
+          description: "封面相对路径（接在 https://vrcc.cc 后面使用），无封面或不可见时为 null"
+          example: "/api/match?xdimg=wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd"
 
     ErrorBody:
       type: object
@@ -730,6 +994,11 @@ components:
             - `yq_empty` (400)：短评仅含符号或空白
             - `bad_request` (400)：请求体或参数格式错误
             - `too_large` (413)：请求体超过 2 KB
-        every: { type: integer, description: '`too_soon` 时返回，建议多少秒后再试' }
-        need: { $ref: '#/components/schemas/Need' }
-        why: { type: string, description: '`yq_words` 时返回，短评未通过的原因' }
+        every:
+          type: integer
+          description: "too_soon 时返回，建议多少秒后再试"
+        need:
+          $ref: "#/components/schemas/Need"
+        why:
+          type: string
+          description: "yq_words 时返回，短评未通过的原因"
