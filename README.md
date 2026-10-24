@@ -175,7 +175,7 @@ sequenceDiagram
 ```
 
 > [!WARNING]
-> **每个客户端有自己的授权。** 你的客户端连上，不会顶掉玩家 VRCX 脚本里的连接，也不影响别的客户端。但同一个客户端、同一位玩家只有一个授权：再授权一次，这个客户端之前的令牌就失效了。每位玩家最多 10 个（第三方客户端和登录过的网站一起算），多了会删掉最久没用的。玩家在「我的资料 → 第三方客户端」能看到每一个，也能单独断开。当轮询或请求收到 `404`（`{"error": "gone"}`）时，说明令牌已失效，请立即停止轮询并让玩家重新授权。
+> **每个客户端有自己的授权。** 你的客户端连上，不会顶掉玩家 VRCX 脚本里的连接，也不影响别的客户端。但同一个客户端、同一位玩家只有一个授权：再授权一次，这个客户端之前的令牌就失效了。每位玩家最多 10 个（第三方客户端和登录过的网站一起算），多了会删掉最久没用的。玩家在「我的资料 → 第三方客户端」能看到每一个，也能单独断开。令牌只能配发给它的那个 `X-Client` 用，换了标识会回答 `403 client_mismatch`。当轮询或请求收到 `404`（`{"error": "gone"}`）时，说明令牌已失效，请立即停止轮询并让玩家重新授权。
 
 旧的连接码方式（玩家在网页上拿 8 位码，输进你的客户端，客户端调 `POST /connect`）还能用，见「[连接码（旧方式）](#连接码旧方式post-apiv1connect)」。新客户端请用设备授权。
 
@@ -216,6 +216,7 @@ sequenceDiagram
 
 - **桌面客户端**在 `POST /device/code` 里用 `scope` 要，8 项都能要；不写就是 `profile notifications crossings mutuals maps maps.rate`（和我们的 VRCX 脚本一样）。旧的连接码连上的也是这一串。
 - **网站**在 `/oauth/authorize` 里用 `scope` 要；不写只有 `profile`。网站不能要 `crossings` 和 `mutuals`：那里面是别的玩家的名字和 VRChat 账号，他们没同意过，网站也没人审核。
+- **网站走设备授权**（`X-Client` 填 `client_id`）也一样：不写只有 `profile`，最多 `profile vrchat card maps maps.rate notifications`，要 `crossings` 或 `mutuals` 回答 `400 invalid_scope`。
 - **同意页把要的每一项列成一行**，不折叠，玩家不能只同意其中几项。所以只要用得到的。
 - 没有权限时调 `me/…`，回答 `403` `{"error": "scope", "need": "<缺的权限>"}`。
 
@@ -228,6 +229,7 @@ sequenceDiagram
 | `403` | `client_off` | 这个 `client` 标识已被停用 |
 | `429` | `too_many` | 问得太快或今天次数用完，等至少一分钟后再试 |
 | `401` | `token` | 玩家自己的接口没带令牌，或令牌格式不对 |
+| `403` | `client_mismatch` | 令牌不是发给这个 `X-Client` 的：每个令牌只能配拿到它的那个客户端或网站的标识用 |
 | `403` | `scope` | 令牌没有这个接口要的权限，`need` 写着缺哪个；要用就让玩家重新授权，这次把它要上 |
 | `404` | `gone` | **令牌失效**（玩家断开了、同一个客户端又授权了一次、星被删除）：停下轮询，让玩家重新授权 |
 | `404` | `not_found` | 没有这个接口，或查询的地图不在榜上 |
@@ -236,7 +238,7 @@ sequenceDiagram
 | `400` | `authorization_pending` | 设备授权：玩家还没点同意，过 `interval` 秒再问 |
 | `400` | `access_denied` | 设备授权：玩家点了不同意 |
 | `400` | `expired_token` | 设备授权：码过期了（10 分钟）、已经换过令牌、不是这个客户端的，或没有这个码 |
-| `400` | `invalid_scope` | 设备授权：`scope` 里有不认识的权限 |
+| `400` | `invalid_scope` | 设备授权：`scope` 里有不认识的权限，或网站要了网站不能要的 |
 | `400` / `401` | `invalid_request`、`invalid_client`、`invalid_grant` 等 | 用星遇同频登录的错误，见「[换令牌](#第二步换令牌-post-apiv1oauthtoken)」 |
 | `401` | `invalid_token` | 用星遇同频登录：玩家断开了这个网站，或网站被停用 |
 
@@ -326,6 +328,8 @@ sequenceDiagram
 
 不写 `scope` 就是 `profile notifications crossings mutuals maps maps.rate`。`profile` 总会加上。
 
+登记过的网站也能用设备授权（`X-Client` 填 `client_id`），但权限和「用星遇同频登录」一样：不写只有 `profile`，最多 `profile vrchat card maps maps.rate notifications`。
+
 **成功回答（`200`）：**
 
 ```json
@@ -350,17 +354,17 @@ sequenceDiagram
 | `interval` | 多少秒问一次 `/device/token`（`5`） |
 | `scope` | 这次要的权限（按固定顺序，`profile` 在最前） |
 
-玩家要先登录星遇同频。打开链接后，玩家看到客户端的名字（没登记的 `dev-` 标识会写「（测试中）」和「还没登记，只在测试」）和要的每一项权限（一项一行），然后点「同意」或「不同意」。
+玩家要先登录星遇同频。打开链接后，玩家看到客户端的名字（没登记的 `dev-` 标识会写「（测试中）」和「还没登记，只在测试」；网站显示它登记的网站名称）和要的每一项权限（一项一行），然后点「同意」或「不同意」。
 
 - **错误状态**：
-  - `400 invalid_scope`：`scope` 里有不认识的权限
+  - `400 invalid_scope`：`scope` 里有不认识的权限，或网站要了 `crossings` / `mutuals`
   - `429 too_many`：这个网络今天拿的码太多（每天最多 30 个）
 
 ---
 
 ### 换令牌：`POST /api/v1/device/token`
 
-拿到码以后，每 `interval` 秒问一次，**不要更快**。带的 `X-Client` 要和拿码时一样。
+拿到码以后，每 `interval` 秒问一次，**不要更快**。带的 `X-Client` 要和拿码时一样。拿到的令牌之后也只能配这个 `X-Client` 用。
 
 **请求正文：**
 
@@ -839,6 +843,7 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 
 - `client_id` 在网站登记期间都能当 `X-Client`（或 `?client=`）用，开放数据接口也一样；网站删了或没登记，回答 `403 client_unknown`。
 - 只能调权限里有的接口，别的回答 `403 scope`。玩家断开以后回答 `404 gone`。
+- 令牌只能配你自己的 `client_id` 用，`X-Client` 换成别的标识回答 `403 client_mismatch`。
 - 字段、限制和桌面客户端一样，见「[玩家自己的接口](#玩家自己的接口)」。
 
 ---

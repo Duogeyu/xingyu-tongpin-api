@@ -102,7 +102,8 @@ tags:
          - PKCE：不用密钥的网站必须带 `code_challenge`（SHA-256 后 base64url，43 个字符）；用密钥的服务器网站可选，建议也带。
       3. **换令牌**：`POST /oauth/token`。
       4. **查询玩家**：`GET /oauth/userinfo`。
-      5. **调用玩家个人接口（可选）**：要了 `card`、`maps`、`maps.rate`、`notifications` 的网站，可从服务器带 `Authorization: Bearer <access_token>` 与 `X-Client: <client_id>` 调用对应的 `/me/…` 接口。网站登记期间 `client_id`（`app_…`）可当作 `X-Client`（或 `?client=`）用于所有 `/api/v1` 接口（含开放数据）；未登记或已删除的返回 `403 client_unknown`。
+      5. **调用玩家个人接口（可选）**：要了 `card`、`maps`、`maps.rate`、`notifications` 的网站，可从服务器带 `Authorization: Bearer <access_token>` 与 `X-Client: <client_id>` 调用对应的 `/me/…` 接口。网站登记期间 `client_id`（`app_…`）可当作 `X-Client`（或 `?client=`）用于所有 `/api/v1` 接口（含开放数据）；未登记或已删除的返回 `403 client_unknown`。令牌只能配自己的 `client_id` 使用，`X-Client` 不一致返回 `403 client_mismatch`。
+      6. **设备授权（可选）**：网站也可以用 `client_id` 当 `X-Client` 走设备授权（`POST /device/code`），权限上限与登录相同：省略时只有 `profile`，最多 `profile vrchat card maps maps.rate notifications`，要 `crossings` / `mutuals` 返回 `400 invalid_scope`；同意页显示网站登记的名称。
 
       授权时用 `scope` 指定权限，省略时只有 `profile`，最多 `profile vrchat card maps maps.rate notifications`；要了不能要或不认识的权限，错误只显示在星遇同频页面上，**不会跳回网站**。所有年龄（16 岁以上）的玩家都可使用。
   - name: "玩家个人数据"
@@ -306,10 +307,12 @@ paths:
       description: |
         设备授权（RFC 8628）第一步。请求体可省略；需要指定权限时带 `scope`（省略时为 `profile notifications crossings mutuals maps maps.rate`，`profile` 总会加上）。
 
+        登记过的网站（`X-Client` 为 `app_…`）也可使用，但权限上限与「用星遇同频登录」相同：省略时只有 `profile`，最多 `profile vrchat card maps maps.rate notifications`。
+
         - 客户端向玩家显示 `user_code`，并在浏览器中打开 `verification_uri_complete`（码已包含在链接中）；玩家也可以在「我的资料 → 第三方客户端」手动输入 `user_code`。
-        - 玩家需已登录星遇同频，会看到客户端名字（未登记的 `dev-` 标识显示「（测试中）」与「还没登记，只在测试」）及所要的每一项权限（一项一行），再点「同意」或「不同意」。
+        - 玩家需已登录星遇同频，会看到客户端名字（未登记的 `dev-` 标识显示「（测试中）」与「还没登记，只在测试」；网站显示其登记的名称）及所要的每一项权限（一项一行），再点「同意」或「不同意」。
         - `device_code` 仅由客户端保存，用于调用 `POST /device/token`，不要展示给玩家。
-        - `scope` 中有不认识的权限：`400 invalid_scope`。
+        - `scope` 中有不认识的权限，或网站要了 `crossings` / `mutuals`：`400 invalid_scope`。
         - 限制：每个网络地址每天最多获取 30 个（超限返回 `429 too_many`）。
       requestBody:
         required: false
@@ -330,7 +333,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeviceCode"
         '400':
-          description: "scope 中有不认识的权限（invalid_scope）"
+          description: "scope 中有不认识的权限，或网站要了网站不能要的权限（invalid_scope）"
           content:
             application/json:
               schema:
@@ -350,7 +353,7 @@ paths:
       summary: "设备授权：轮询换取访问令牌"
       operationId: deviceToken
       description: |
-        设备授权第二步：每隔 `interval` 秒（5 秒）调用一次，**不要更快**；`X-Client` 必须与获取设备码时相同。
+        设备授权第二步：每隔 `interval` 秒（5 秒）调用一次，**不要更快**；`X-Client` 必须与获取设备码时相同。拿到的令牌之后也只能配这个 `X-Client` 使用（否则 `403 client_mismatch`）。
 
         - 等待中：`400 authorization_pending`，继续等待；
         - 玩家不同意：`400 access_denied`，停止；
@@ -992,6 +995,7 @@ paths:
           description: |
             当前不允许打分：
             - `scope`：令牌没有 `maps.rate` 权限（附带 `need`）
+            - `client_mismatch`：令牌不是发给这个 `X-Client` 的
             - `map_not_went`：还不满足打分条件，`need` 字段指出缺少的步骤（`verify` / `friend` / `go`）
             - `map_elsewhere`：机器人看到玩家此刻在另一张地图上
             - `map_off` / `xd_world_no`：该地图已关闭评分或不对当前玩家开放
@@ -1168,14 +1172,21 @@ components:
           example:
             error: "token"
     ScopeError:
-      description: "令牌没有这个接口要的权限（scope），need 写着缺哪个；要用就让玩家重新授权并要上它"
+      description: "令牌没有这个接口要的权限（scope，need 写着缺哪个；要用就让玩家重新授权并要上它），或令牌不是发给这个 X-Client 的（client_mismatch）"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorBody"
-          example:
-            error: "scope"
-            need: "card"
+          examples:
+            scope:
+              summary: "缺少权限"
+              value:
+                error: "scope"
+                need: "card"
+            mismatch:
+              summary: "令牌和 X-Client 不匹配"
+              value:
+                error: "client_mismatch"
     GoneError:
       description: "令牌已失效（玩家已断开、同一客户端再次授权、或删除了星），请停止请求并让玩家重新授权（gone）"
       content:
@@ -1246,7 +1257,7 @@ components:
       description: |
         空格分隔的权限（请求时也接受逗号或 `+`），返回时按固定顺序、`profile` 在最前：
         `profile` `vrchat` `card` `maps` `maps.rate` `notifications` `crossings` `mutuals`。
-        客户端可要全部 8 项；网站最多 `profile vrchat card maps maps.rate notifications`。
+        客户端可要全部 8 项；网站（登录或设备授权）最多 `profile vrchat card maps maps.rate notifications`。
       example: "profile notifications maps maps.rate"
 
     Card:
@@ -1551,7 +1562,8 @@ components:
             - `client_off` (403)：该 `client` 标识已被停用
             - `token` (401)：未携带或格式错误的 `Authorization: Bearer` 令牌
             - `scope` (403)：令牌没有该接口要的权限（附带 `need`）
-            - `invalid_scope` (400)：设备授权的 `scope` 中有不认识的权限
+            - `invalid_scope` (400)：设备授权的 `scope` 中有不认识的权限，或网站要了网站不能要的权限
+            - `client_mismatch` (403)：令牌不是发给这个 `X-Client` 的
             - `gone` (404)：令牌已失效（断开、被新连接顶掉、星已删除）
             - `code` (404)：连接码错误、过期或已使用
             - `not_found` (404)：接口不存在或地图不在榜上

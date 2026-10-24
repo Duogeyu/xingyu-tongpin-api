@@ -8,6 +8,8 @@
 - 设备授权：`device/code` 可以带 `scope`，不写就是 `profile notifications crossings mutuals maps maps.rate`（和以前能做的一样）；不认识的回答 `400 invalid_scope`。`device/code` 和 `device/token` 的回答多了 `scope`。旧的连接码也给这一串。
 - 用星遇同频登录：`/oauth/authorize` 可以带 `scope`，不写只有 `profile`；网站最多 `profile vrchat card maps maps.rate notifications`，不能要星轨相交和互相连上。`user.vrc` 现在要有 `vrchat` 权限才给。
 - 网站可以用令牌和自己的 `client_id`（当 `X-Client`）从服务器调权限内的 `me/…`；登记期间 `client_id` 在所有 `/api/v1` 接口都能当标识用。
+- 令牌只能配发给它的那个 `X-Client` 用，不一致回答 `403 client_mismatch`。
+- 网站也能走设备授权，权限上限和登录一样（不写只有 `profile`，要 `crossings` / `mutuals` 回答 `400 invalid_scope`），同意页显示网站登记的名称。
 - 同意页把要的每一项列成一行，不折叠，不能逐项取消。只要用得到的。
 - 新接口：`GET me/card`（星卡，`card`）、`GET me/maps`（打过分的地图，`maps`，算在每天 300 次里）。
 - 示例：`client.mjs` 的 `login` 可以指定权限，加了 `card`、`mymaps`；`login-site.mjs` 可以用 `SCOPE` 指定权限。
