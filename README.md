@@ -1078,6 +1078,6 @@ CLIENT_ID=app_… CLIENT_SECRET=sec_… SCOPE="profile card" node examples/login
 
 ## 旧的接口
 
-我们的 VRCX 脚本（v4 及以前）用的是 `https://vrcc.cc/api/match?vrcx=…` 那一套，令牌放在网址里。它还能用，但只给我们自己的脚本；新的客户端请一律使用 `/api/v1/`。
+我们的 VRCX 脚本（v4 及以前）用的是 `https://vrcc.cc/api/match?vrcx=…` 那一套，令牌放在网址里。它还能用，但只给我们自己的脚本；新的客户端请一律使用 `/api/v1/`。第三方客户端的令牌走这一套时，同样会检查后台停用（`client_off`）和令牌所属的客户端（`client_mismatch`），自助登记的应用走不了这一套。
 
 `/api/v1/connect` 的连接码也还能用，新的客户端请用[设备授权](#设备授权post-apiv1devicecode)。
