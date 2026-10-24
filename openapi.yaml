@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.1.0"
+  version: "1.2.0"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -11,8 +11,29 @@ info:
     | 类别 | 是否需要令牌 | 适用场景 | 数据范围 |
     | --- | --- | --- | --- |
     | **开放数据 · 地图榜** | 否（仅需 `client` 标识） | VRChat 世界内 Udon 组件、社区网站、群聊机器人 | 与公开的 [地图榜页面](https://vrcc.cc/maps/) 一致（仅含过审地图、均分、评分人数、名次、性能档位，不含评分人与短评） |
-    | **玩家个人接口** | 是（`Authorization: Bearer <令牌>`，推荐用设备授权获取） | 桌面端工具（如 [VRCX 脚本](https://github.com/vrcc-cc/xingyu-tongpin-vrcx)、VRCX 分支、Tauri 客户端） | 仅限当前授权玩家本人（收提醒、看星轨相交与互相连上的星、给所在地图打分） |
-    | **用星遇同频登录** | 是（OAuth 2.0 授权码 + PKCE，网站自助登记 `client_id`） | 想让玩家「用星遇同频登录」的网站 | 仅含该网站专用的玩家编号 `sub`、星号、验证过的 VRChat 名字与 ID |
+    | **玩家个人接口** | 是（`Authorization: Bearer <令牌>`，推荐用设备授权获取） | 桌面端工具（如 [VRCX 脚本](https://github.com/vrcc-cc/xingyu-tongpin-vrcx)、VRCX 分支、Tauri 客户端） | 仅限当前授权玩家本人，按玩家同意的权限（收提醒、看星轨相交与互相连上的星、看星卡、看与打地图评分） |
+    | **用星遇同频登录** | 是（OAuth 2.0 授权码 + PKCE，网站自助登记 `client_id`） | 想让玩家「用星遇同频登录」的网站 | 默认仅含该网站专用的玩家编号 `sub` 与星号；按所要权限还可获得验证过的 VRChat 名字与 ID、星卡、地图评分、提醒 |
+
+    ---
+
+    ### 权限（scope）
+
+    每个令牌都带一串权限（空格分隔，也接受逗号或 `+`），只能调用权限内的接口；缺少权限时返回 `403` `{"error": "scope", "need": "<权限>"}`。
+
+    | 权限 | 同意页显示 | 可用接口 | 客户端默认 | 网站可要 |
+    | --- | --- | --- | :---: | :---: |
+    | `profile` | 只给它用的编号和你的星号 | `oauth/userinfo` 的 `sub`、`star` | 总有 | 总有 |
+    | `vrchat` | 你的 VRChat 名字和 ID | `oauth/token`、`oauth/userinfo` 的 `vrc` | | ✓ |
+    | `card` | 你的星卡：星群、介绍和成分 | `GET /me/card` | | ✓ |
+    | `maps` | 你在地图榜打的分和短评 | `GET /me/maps`、`GET /me/maps/{world}` | ✓ | ✓ |
+    | `maps.rate` | 替你给去过的地图打分 | `POST /me/maps/{world}/rating` | ✓ | ✓ |
+    | `notifications` | 收你的提醒 | `GET /me/notifications`、`GET /me/notifications/recent` | ✓ | ✓ |
+    | `crossings` | 看星轨相交 | `GET /me/crossings` | ✓ | |
+    | `mutuals` | 看互相连上的星和他们的 VRChat 名字 | `GET /me/mutuals` | ✓ | |
+
+    - 桌面客户端在 `POST /device/code` 的 `scope` 中指定，8 项均可；省略时为 `profile notifications crossings mutuals maps maps.rate`（旧的连接码授权同此）。
+    - 网站在 `/oauth/authorize` 的 `scope` 中指定；省略时只有 `profile`；不能要 `crossings`、`mutuals`（其中是其他玩家的名字与 VRChat 账号，他们没有同意过，网站也未经审核）。
+    - 同意页把所要的每一项列成一行，不折叠，也不能逐项取消：请只要用得到的权限。
 
     ---
 
@@ -35,6 +56,7 @@ info:
        - **用 `sub` 认人**：以 `sub` 作为账号主键，不要用星号或 VRChat 名字。
        - **说明用途**：在网站上写明拿到的星号、VRChat 名字与 ID 的用途。
        - **不冒充官方**：网站名称与页面不得让人误以为是星遇同频官方。
+       - **只要用得到的权限**：同意页会逐项列出，玩家只能整体同意或拒绝。
 
     ---
 
@@ -43,6 +65,7 @@ info:
     - **原生程序 / 脚本**（Node.js、Rust、Python、C#、VRChat Udon 等）：直接发起请求，不受浏览器同源策略限制。
     - **桌面客户端内置页面**（如 Tauri）：仅允许 `tauri://localhost`、`http(s)://tauri.localhost`、`null`（本地文件页面）以及开发时的 `http://localhost` / `http://127.0.0.1` 读取响应；普通外部网站无法跨域调用。
     - **`/oauth/token` 与 `/oauth/userinfo`**：允许任何来源跨域调用（`Access-Control-Allow-Origin: *`），且不需要 `X-Client`。
+    - **网站调用 `/me/…`**：普通网站的网页跨域读不到，请从网站服务器发起，`X-Client` 填网站的 `client_id`。
   contact:
     name: "GitHub Issues (登记客户端 / 问题反馈)"
     url: "https://github.com/vrcc-cc/xingyu-tongpin-api/issues"
@@ -64,6 +87,8 @@ tags:
       **推荐：设备授权（RFC 8628）。** 客户端调用 `POST /device/code` 拿到给玩家看的 `user_code` 与同意链接 `verification_uri_complete`；玩家在浏览器里看到客户端名字后点「同意」；客户端每 `interval` 秒调用 `POST /device/token`，同意后拿到 48 位十六进制访问令牌。
       **旧方式（仍可用）**：玩家在网页端「我的资料 → 在 VRCX 里提醒」获取 8 位一次性连接码，客户端调用 `POST /connect` 换取令牌。
 
+      客户端用 `scope` 指定要的权限（省略时为 `profile notifications crossings mutuals maps maps.rate`），同意页逐项列出。
+
       **每个客户端有自己的授权**，不会顶掉玩家 VRCX 脚本或别的客户端的连接。同一客户端、同一玩家只有一个授权（再次授权会让这个客户端之前的令牌失效）；每位玩家最多 10 个（第三方客户端与登录过的网站合计，超出时删除最久未使用的）。玩家可在「我的资料 → 第三方客户端」查看并单独断开。
   - name: "用星遇同频登录"
     description: |
@@ -77,12 +102,13 @@ tags:
          - PKCE：不用密钥的网站必须带 `code_challenge`（SHA-256 后 base64url，43 个字符）；用密钥的服务器网站可选，建议也带。
       3. **换令牌**：`POST /oauth/token`。
       4. **查询玩家**：`GET /oauth/userinfo`。
+      5. **调用玩家个人接口（可选）**：要了 `card`、`maps`、`maps.rate`、`notifications` 的网站，可从服务器带 `Authorization: Bearer <access_token>` 与 `X-Client: <client_id>` 调用对应的 `/me/…` 接口。网站登记期间 `client_id`（`app_…`）可当作 `X-Client`（或 `?client=`）用于所有 `/api/v1` 接口（含开放数据）；未登记或已删除的返回 `403 client_unknown`。
 
-      令牌只能读取 `userinfo`，不能调用提醒、星轨相交、打分等玩家个人接口。所有年龄（16 岁以上）的玩家都可使用。
+      授权时用 `scope` 指定权限，省略时只有 `profile`，最多 `profile vrchat card maps maps.rate notifications`；要了不能要或不认识的权限，错误只显示在星遇同频页面上，**不会跳回网站**。所有年龄（16 岁以上）的玩家都可使用。
   - name: "玩家个人数据"
     description: |
-      需同时携带 `X-Client: <标识>` 与 `Authorization: Bearer <令牌>` 请求头（令牌严禁放入 URL）。
-      用于拉取实时提醒、查看星轨相交与互相连上的星友、查询并给当前所在的 VRChat 地图打分。
+      需同时携带 `X-Client: <标识>` 与 `Authorization: Bearer <令牌>` 请求头（令牌严禁放入 URL），且令牌须有对应权限（否则 `403 scope`）。
+      用于拉取实时提醒、查看星轨相交与互相连上的星友、查看星卡与地图评分、给当前所在的 VRChat 地图打分。
 
 security:
   - client: []
@@ -278,12 +304,24 @@ paths:
       summary: "设备授权：获取设备码与同意链接（推荐）"
       operationId: deviceCode
       description: |
-        设备授权（RFC 8628）第一步，不需要请求体，只需 `X-Client`。
+        设备授权（RFC 8628）第一步。请求体可省略；需要指定权限时带 `scope`（省略时为 `profile notifications crossings mutuals maps maps.rate`，`profile` 总会加上）。
 
         - 客户端向玩家显示 `user_code`，并在浏览器中打开 `verification_uri_complete`（码已包含在链接中）；玩家也可以在「我的资料 → 第三方客户端」手动输入 `user_code`。
-        - 玩家需已登录星遇同频，会看到客户端名字（未登记的 `dev-` 标识显示「（测试中）」与「还没登记，只在测试」）及其权限：收提醒、看星轨相交和互相连上的星、给去过的地图打分，再点「同意」或「不同意」。
+        - 玩家需已登录星遇同频，会看到客户端名字（未登记的 `dev-` 标识显示「（测试中）」与「还没登记，只在测试」）及所要的每一项权限（一项一行），再点「同意」或「不同意」。
         - `device_code` 仅由客户端保存，用于调用 `POST /device/token`，不要展示给玩家。
+        - `scope` 中有不认识的权限：`400 invalid_scope`。
         - 限制：每个网络地址每天最多获取 30 个（超限返回 `429 too_many`）。
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scope:
+                  $ref: "#/components/schemas/Scope"
+            example:
+              scope: "notifications maps maps.rate"
       responses:
         '200':
           description: "设备码与同意链接"
@@ -291,6 +329,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DeviceCode"
+        '400':
+          description: "scope 中有不认识的权限（invalid_scope）"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+              example:
+                error: "invalid_scope"
         '403':
           $ref: "#/components/responses/ClientError"
         '429':
@@ -332,7 +378,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [access_token, token_type, me]
+                required: [access_token, token_type, scope, me]
                 properties:
                   access_token:
                     type: string
@@ -342,6 +388,8 @@ paths:
                   token_type:
                     type: string
                     const: "Bearer"
+                  scope:
+                    $ref: "#/components/schemas/Scope"
                   me:
                     $ref: "#/components/schemas/Me"
         '400':
@@ -383,7 +431,7 @@ paths:
         玩家在网页端「我的资料 → 在 VRCX 里提醒」生成 8 位一次性连接码（10 分钟内有效），客户端调用本接口换取 48 位十六进制 `token`。
 
         - 连接码中的空格、横线会被自动忽略，不区分大小写。
-        - **每个客户端有自己的授权**：连接成功不会顶掉玩家的 VRCX 脚本或其他客户端；同一客户端再次连接会让它之前的令牌失效。玩家会收到站内通知（「刚在第三方客户端『…』里连上了」）。
+        - **每个客户端有自己的授权**：连接成功不会顶掉玩家的 VRCX 脚本或其他客户端；同一客户端再次连接会让它之前的令牌失效。权限为客户端默认的 `profile notifications crossings mutuals maps maps.rate`。玩家会收到站内通知（「刚在第三方客户端『…』里连上了」）。
         - 限制：每个网络地址每天最多尝试 30 次（超限返回 `429 too_many`）；全站当天错误码过多时暂停连接至次日（`429 busy`）。
       requestBody:
         required: true
@@ -466,6 +514,8 @@ paths:
       summary: "轮询新提醒（心跳）"
       operationId: pollNotifications
       description: |
+        **需要权限 `notifications`。**
+
         在 VRChat 运行期间定期轮询新提醒（建议按响应中的 `every` 间隔，通常为 **60 秒**；同一授权两次请求间隔不得少于 **25 秒**）。
 
         - **首次调用（不带 `since`）**：仅返回当前最新游标 `last` 和未读红点 `dot`，`items` 为空数组（不重放历史提醒）。
@@ -529,6 +579,8 @@ paths:
                     dot: 0
         '401':
           $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
         '404':
           $ref: "#/components/responses/GoneError"
         '429':
@@ -549,6 +601,8 @@ paths:
       summary: "获取最近的提醒列表"
       operationId: getRecentNotifications
       description: |
+        **需要权限 `notifications`。**
+
         获取最近 24 小时内的最后 5 条提醒（**新的在前**），包含对应的站内跳转路径 `url`。
         与 `/me/crossings`、`/me/mutuals`、`/me/maps/{world}` 共享每颗星每天 300 次的查看额度。
       security:
@@ -587,6 +641,8 @@ paths:
                     example: 1040
         '401':
           $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
         '404':
           $ref: "#/components/responses/GoneError"
         default:
@@ -598,6 +654,8 @@ paths:
       summary: "获取「星轨相交」列表"
       operationId: getCrossings
       description: |
+        **需要权限 `crossings`。**
+
         获取与网页端「连向我 → 星轨相交」一致的擦肩记录列表（在 VRChat 同一房间偶遇过的星遇同频玩家）。
         - 传 `?mark=1` 会清除未读红点。
         - 在浏览器中打开某颗星可使用 `https://vrcc.cc/match/?tab=inbox&cross={n}`。
@@ -688,6 +746,8 @@ paths:
                     $ref: "#/components/schemas/Me"
         '401':
           $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
         '404':
           $ref: "#/components/responses/GoneError"
         default:
@@ -699,6 +759,8 @@ paths:
       summary: "获取「互相连上」的星友列表"
       operationId: getMutuals
       description: |
+        **需要权限 `mutuals`。**
+
         返回与当前玩家已经**双向连线**的星友列表（按互相连上的时间倒序，最近连上的在前）。
         - 当对方已完成 VRChat 验证且隐私设置允许公开「已验证」时，会额外返回对方的 VRChat 用户 ID `vrcUser`（`usr_…`）。
         - **重要合规要求**：如果客户端提供「加好友」按钮，只能打开客户端自身的玩家资料页让玩家手动点击添加，**严禁由程序自动代替玩家向 VRChat 发送好友请求**。
@@ -752,8 +814,76 @@ paths:
                     example: 1
         '401':
           $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
         '404':
           $ref: "#/components/responses/GoneError"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /me/card:
+    get:
+      tags: ["玩家个人数据"]
+      summary: "获取我的星卡"
+      operationId: getMyCard
+      description: |
+        **需要权限 `card`。**
+
+        与网页「我的星」一致的星卡：星号、星位名与一句描述、星群、氛围、四个星群的成分与介绍。
+      security:
+        - client: []
+          token: []
+      responses:
+        '200':
+          description: "我的星卡"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Card"
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /me/maps:
+    get:
+      tags: ["玩家个人数据"]
+      summary: "获取我打过分的地图"
+      operationId: getMyMaps
+      description: |
+        **需要权限 `maps`。**
+
+        玩家在地图榜打过分的地图（最近打的在前，最多 200 张），含短评与审核状态。
+        与 `/me/notifications/recent`、`/me/crossings`、`/me/mutuals`、`/me/maps/{world}` 共享每颗星每天 300 次的查看额度。
+      security:
+        - client: []
+          token: []
+      responses:
+        '200':
+          description: "我打过分的地图"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [maps]
+                properties:
+                  maps:
+                    type: array
+                    maxItems: 200
+                    items:
+                      $ref: "#/components/schemas/MyRating"
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        '429':
+          $ref: "#/components/responses/RateLimitError"
         default:
           $ref: "#/components/responses/Error"
 
@@ -763,6 +893,8 @@ paths:
       summary: "查询当前所在地图的状态与我的评分"
       operationId: getMyMapStatus
       description: |
+        **需要权限 `maps`。**
+
         查询玩家当前所在的 VRChat 世界在星遇同频地图榜上的状态、玩家本人的打分与短评，以及现在是否允许打分。
         - 如果返回的 `off` 为 `true`，说明该地图被下架或不对该玩家的年龄池开放，客户端**不要显示**打分面板。
         - 如果 `board`、`pending`、`off` 均为 `false`，说明地图榜上还没有这张图，玩家首次打分时会自动将它提交到地图榜审核。
@@ -785,6 +917,8 @@ paths:
                 $ref: "#/components/schemas/MyMap"
         '401':
           $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
         '404':
           $ref: "#/components/responses/GoneError"
         default:
@@ -796,6 +930,8 @@ paths:
       summary: "给当前所在的地图打分与写短评"
       operationId: rateMyMap
       description: |
+        **需要权限 `maps.rate`。**
+
         为玩家当前所在的地图打分（1–10 分），可选附带一句不超过 30 字的短评。
         - **必须由玩家本人主动点击触发**，严禁自动打分或批量打分。
         - `text` 处理规则：
@@ -855,6 +991,7 @@ paths:
         '403':
           description: |
             当前不允许打分：
+            - `scope`：令牌没有 `maps.rate` 权限（附带 `need`）
             - `map_not_went`：还不满足打分条件，`need` 字段指出缺少的步骤（`verify` / `friend` / `go`）
             - `map_elsewhere`：机器人看到玩家此刻在另一张地图上
             - `map_off` / `xd_world_no`：该地图已关闭评分或不对当前玩家开放
@@ -881,7 +1018,8 @@ paths:
         - 网站证明身份：`client_secret`（放在请求体，或 HTTP Basic `Authorization: Basic base64(client_id:client_secret)`），或 `code_verifier`（授权时带了 `code_challenge` 的必须提供）。授权时没带 `code_challenge` 的必须提供 `client_secret`。
         - `redirect_uri` 必须与授权时完全一致。
         - 同一玩家在同一网站再次登录，会让该网站之前拿到的令牌失效。
-        - 令牌只能调用 `GET /oauth/userinfo`。
+        - 响应中的 `scope` 是玩家同意的权限；`user.vrc` 只在有 `vrchat` 权限且玩家验证过时返回。
+        - 令牌可调用 `GET /oauth/userinfo`，以及权限允许的 `/me/…` 接口（从服务器调用，`X-Client` 填 `client_id`）。
       security:
         - {}
         - clientBasic: []
@@ -906,14 +1044,13 @@ paths:
                   access_token:
                     type: string
                     pattern: "^[0-9a-f]{48}$"
-                    description: "48 位十六进制令牌，只能用于 GET /oauth/userinfo"
+                    description: "48 位十六进制令牌，用于 GET /oauth/userinfo 与权限允许的 /me/… 接口"
                     example: "b7e1c9d2a3f40123456789abcdef0123456789abcdef4567"
                   token_type:
                     type: string
                     const: "Bearer"
                   scope:
-                    type: string
-                    const: "profile"
+                    $ref: "#/components/schemas/Scope"
                   user:
                     $ref: "#/components/schemas/OAuthUser"
         '400':
@@ -948,7 +1085,7 @@ paths:
 
         收到 `401 invalid_token` 时，说明玩家在「我的资料 → 第三方客户端」断开了你的网站，或网站已被停用：把这位玩家当作已登出。
       security:
-        - oauth: [profile]
+        - oauth: []
       responses:
         '200':
           description: "玩家信息"
@@ -973,7 +1110,7 @@ components:
       type: apiKey
       in: header
       name: X-Client
-      description: "已登记的客户端标识；开发自测阶段请使用 dev- 开头的标识（例如 dev-example）"
+      description: "已登记的客户端标识，或登记过的网站的 client_id（app_…）；开发自测阶段请使用 dev- 开头的标识（例如 dev-example）"
     clientQuery:
       type: apiKey
       in: query
@@ -995,11 +1132,16 @@ components:
           authorizationUrl: "https://vrcc.cc/oauth/authorize"
           tokenUrl: "https://vrcc.cc/api/v1/oauth/token"
           scopes:
-            profile: "该网站专用的玩家编号 sub、星号、验证过的 VRChat 名字与 ID"
+            profile: "只给它用的编号和你的星号（总会包含）"
+            vrchat: "你的 VRChat 名字和 ID（验证过才给）"
+            card: "你的星卡：星群、介绍和成分（GET /me/card）"
+            maps: "你在地图榜打的分和短评（GET /me/maps、GET /me/maps/{world}）"
+            maps.rate: "替你给去过的地图打分（POST /me/maps/{world}/rating）"
+            notifications: "收你的提醒（GET /me/notifications、/me/notifications/recent）"
 
   responses:
     ClientError:
-      description: "客户端标识缺失、未登记或已被停用（client_missing / client_unknown / client_off）"
+      description: "客户端标识缺失、未登记（不是登记名单里的标识、登记过的网站 client_id 或 dev- 开头）或已被停用（client_missing / client_unknown / client_off）"
       content:
         application/json:
           schema:
@@ -1025,6 +1167,15 @@ components:
             $ref: "#/components/schemas/ErrorBody"
           example:
             error: "token"
+    ScopeError:
+      description: "令牌没有这个接口要的权限（scope），need 写着缺哪个；要用就让玩家重新授权并要上它"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorBody"
+          example:
+            error: "scope"
+            need: "card"
     GoneError:
       description: "令牌已失效（玩家已断开、同一客户端再次授权、或删除了星），请停止请求并让玩家重新授权（gone）"
       content:
@@ -1090,9 +1241,100 @@ components:
           description: "玩家当前登记的 VRChat 名字"
           example: "MyVRCName"
 
+    Scope:
+      type: string
+      description: |
+        空格分隔的权限（请求时也接受逗号或 `+`），返回时按固定顺序、`profile` 在最前：
+        `profile` `vrchat` `card` `maps` `maps.rate` `notifications` `crossings` `mutuals`。
+        客户端可要全部 8 项；网站最多 `profile vrchat card maps maps.rate notifications`。
+      example: "profile notifications maps maps.rate"
+
+    Card:
+      type: object
+      required: [star, name, line, group, groupName, vibe, scores, intro]
+      properties:
+        star:
+          type: [integer, "null"]
+          description: "/light/ 点亮编号（没有时为 null）"
+          example: 128
+        name:
+          type: string
+          description: "星位名称"
+          example: "拾光旅人"
+        line:
+          type: string
+          description: "星位的一句话描述"
+          example: "放慢脚步逛世界，在角落拍下别人没注意到的光。"
+        group:
+          $ref: "#/components/schemas/Group"
+        groupName:
+          type: string
+          description: "星群名称"
+          example: "漫游星群"
+        vibe:
+          type: string
+          enum: ["安静", "随场", "热闹"]
+          description: "氛围"
+          example: "安静"
+        scores:
+          type: object
+          description: "四个星群的成分（0–100）"
+          required: [G, W, Z, L]
+          properties:
+            G:
+              type: integer
+              example: 82
+            W:
+              type: integer
+              example: 40
+            Z:
+              type: integer
+              example: 35
+            L:
+              type: integer
+              example: 61
+        intro:
+          type: [string, "null"]
+          description: "星卡介绍；还在生成中时为 null"
+          example: "平时喜欢在安静的世界拍照、听音乐。"
+
+    MyRating:
+      type: object
+      required: [world, name, score, words, wordsOk, at, page]
+      properties:
+        world:
+          $ref: "#/components/schemas/World"
+        name:
+          type: [string, "null"]
+          description: "地图名称"
+          example: "星夜茶屋 Starry Tea House"
+        score:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: "我打的分"
+          example: 9
+        words:
+          type: [string, "null"]
+          description: "我写的短评（没写时为 null）"
+          example: "光影很舒服，适合安静聊天"
+        wordsOk:
+          type: [string, "null"]
+          enum: ["wait", "ok", "hidden", null]
+          description: "短评审核状态：wait 审核中、ok 已通过、hidden 未通过；没写短评时为 null"
+          example: "ok"
+        at:
+          type: integer
+          description: "打分时间（毫秒时间戳）"
+          example: 1792830000000
+        page:
+          type: string
+          description: "该地图在地图榜上的详情页"
+          example: "https://vrcc.cc/maps/wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd"
+
     DeviceCode:
       type: object
-      required: [device_code, user_code, verification_uri, verification_uri_complete, expires_in, interval]
+      required: [device_code, user_code, verification_uri, verification_uri_complete, expires_in, interval, scope]
       properties:
         device_code:
           type: string
@@ -1120,6 +1362,8 @@ components:
           type: integer
           description: "调用 POST /device/token 的间隔秒数"
           example: 5
+        scope:
+          $ref: "#/components/schemas/Scope"
 
     OAuthTokenRequest:
       type: object
@@ -1164,7 +1408,7 @@ components:
           description: "玩家在 /light/ 的星号（没有时为 null）"
           example: 128
         vrc:
-          description: "只在玩家在星遇同频验证过 VRChat 账号时返回，否则为 null"
+          description: "只在有 vrchat 权限、且玩家在星遇同频验证过 VRChat 账号时返回，否则为 null"
           oneOf:
             - type: object
               required: [id, name]
@@ -1306,6 +1550,8 @@ components:
             - `client_unknown` (403)：`client` 不在登记名单中且非 `dev-` 开头
             - `client_off` (403)：该 `client` 标识已被停用
             - `token` (401)：未携带或格式错误的 `Authorization: Bearer` 令牌
+            - `scope` (403)：令牌没有该接口要的权限（附带 `need`）
+            - `invalid_scope` (400)：设备授权的 `scope` 中有不认识的权限
             - `gone` (404)：令牌已失效（断开、被新连接顶掉、星已删除）
             - `code` (404)：连接码错误、过期或已使用
             - `not_found` (404)：接口不存在或地图不在榜上
@@ -1329,7 +1575,9 @@ components:
           type: integer
           description: "too_soon 时返回，建议多少秒后再试"
         need:
-          $ref: "#/components/schemas/Need"
+          type: string
+          description: "map_not_went 时为缺少的打分条件（verify / friend / go，见 Need）；scope 时为缺少的权限"
+          example: "go"
         why:
           type: string
           description: "yq_words 时返回，短评未通过的原因"

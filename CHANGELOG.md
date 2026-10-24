@@ -2,6 +2,16 @@
 
 接口要变的地方先写在这里，旧的写法会留一段时间再停。
 
+## 2026-10-25 · 按项授权（权限 scope）
+
+- 每个令牌带一串权限：`profile`（总有）、`vrchat`、`card`、`maps`、`maps.rate`、`notifications`、`crossings`、`mutuals`。调没有权限的 `me/…` 回答 `403` `{"error": "scope", "need": …}`。
+- 设备授权：`device/code` 可以带 `scope`，不写就是 `profile notifications crossings mutuals maps maps.rate`（和以前能做的一样）；不认识的回答 `400 invalid_scope`。`device/code` 和 `device/token` 的回答多了 `scope`。旧的连接码也给这一串。
+- 用星遇同频登录：`/oauth/authorize` 可以带 `scope`，不写只有 `profile`；网站最多 `profile vrchat card maps maps.rate notifications`，不能要星轨相交和互相连上。`user.vrc` 现在要有 `vrchat` 权限才给。
+- 网站可以用令牌和自己的 `client_id`（当 `X-Client`）从服务器调权限内的 `me/…`；登记期间 `client_id` 在所有 `/api/v1` 接口都能当标识用。
+- 同意页把要的每一项列成一行，不折叠，不能逐项取消。只要用得到的。
+- 新接口：`GET me/card`（星卡，`card`）、`GET me/maps`（打过分的地图，`maps`，算在每天 300 次里）。
+- 示例：`client.mjs` 的 `login` 可以指定权限，加了 `card`、`mymaps`；`login-site.mjs` 可以用 `SCOPE` 指定权限。
+
 ## 2026-10-25 · 设备授权、用星遇同频登录
 
 - 设备授权（推荐的连接方式）：`POST device/code` 拿码和同意链接，玩家在浏览器里看到客户端名字后点同意，客户端每 5 秒 `POST device/token` 拿令牌。
