@@ -9,6 +9,9 @@
 - 用星遇同频登录：`/oauth/authorize` 可以带 `scope`，不写只有 `profile`；网站最多 `profile vrchat card maps maps.rate notifications`，不能要星轨相交和互相连上。`user.vrc` 现在要有 `vrchat` 权限才给。
 - 网站可以用令牌和自己的 `client_id`（当 `X-Client`）从服务器调权限内的 `me/…`；登记期间 `client_id` 在所有 `/api/v1` 接口都能当标识用。
 - 令牌只能配发给它的那个 `X-Client` 用，不一致回答 `403 client_mismatch`。
+- `device/token` 的 `me.vrc` 只在有 `vrchat` 权限时给，否则是 `null`；第三方客户端用连接码 `connect` 连上时 `me.vrc` 是 `null`。
+- 先查令牌和 `X-Client` 配不配（`client_mismatch`），再查权限（`scope`）。
+- 同意页文案定稿：客户端写「连接后，它可以：」，按钮「取消 / 同意连接」；网站写「登录后，该网站可以：」。每项权限的说法见 README「权限」一节。
 - 网站也能走设备授权，权限上限和登录一样（不写只有 `profile`，要 `crossings` / `mutuals` 回答 `400 invalid_scope`），同意页显示网站登记的名称。
 - 同意页把要的每一项列成一行，不折叠，不能逐项取消。只要用得到的。
 - 新接口：`GET me/card`（星卡，`card`）、`GET me/maps`（打过分的地图，`maps`，算在每天 300 次里）。

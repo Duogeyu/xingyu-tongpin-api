@@ -22,14 +22,14 @@ info:
 
     | 权限 | 同意页显示 | 可用接口 | 客户端默认 | 网站可要 |
     | --- | --- | --- | :---: | :---: |
-    | `profile` | 只给它用的编号和你的星号 | `oauth/userinfo` 的 `sub`、`star` | 总有 | 总有 |
-    | `vrchat` | 你的 VRChat 名字和 ID | `oauth/token`、`oauth/userinfo` 的 `vrc` | | ✓ |
-    | `card` | 你的星卡：星群、介绍和成分 | `GET /me/card` | | ✓ |
-    | `maps` | 你在地图榜打的分和短评 | `GET /me/maps`、`GET /me/maps/{world}` | ✓ | ✓ |
-    | `maps.rate` | 替你给去过的地图打分 | `POST /me/maps/{world}/rating` | ✓ | ✓ |
-    | `notifications` | 收你的提醒 | `GET /me/notifications`、`GET /me/notifications/recent` | ✓ | ✓ |
-    | `crossings` | 看星轨相交 | `GET /me/crossings` | ✓ | |
-    | `mutuals` | 看互相连上的星和他们的 VRChat 名字 | `GET /me/mutuals` | ✓ | |
+    | `profile` | 识别你的登录身份，并读取你的星号 {星号}（没有星号时：识别你的登录身份（专属匿名编号）） | `oauth/userinfo` 的 `sub`、`star` | 总有 | 总有 |
+    | `vrchat` | 查看你的 VRChat 名字「{名字}」和 ID（没验证时：查看你的 VRChat 名字和 ID（你还没验证，不会提供）） | `oauth/token`、`oauth/userinfo` 的 `vrc` | | ✓ |
+    | `card` | 查看你的星卡（星群、介绍和成分） | `GET /me/card` | | ✓ |
+    | `maps` | 查看你在地图榜的评分和短评 | `GET /me/maps`、`GET /me/maps/{world}` | ✓ | ✓ |
+    | `maps.rate` | 在你操作时，为你去过的地图打分 | `POST /me/maps/{world}/rating` | ✓ | ✓ |
+    | `notifications` | 接收你的星遇同频提醒 | `GET /me/notifications`、`GET /me/notifications/recent` | ✓ | ✓ |
+    | `crossings` | 查看你的「星轨相交」 | `GET /me/crossings` | ✓ | |
+    | `mutuals` | 查看与你互相连上的星和他们的 VRChat 名字 | `GET /me/mutuals` | ✓ | |
 
     - 桌面客户端在 `POST /device/code` 的 `scope` 中指定，8 项均可；省略时为 `profile notifications crossings mutuals maps maps.rate`（旧的连接码授权同此）。
     - 网站在 `/oauth/authorize` 的 `scope` 中指定；省略时只有 `profile`；不能要 `crossings`、`mutuals`（其中是其他玩家的名字与 VRChat 账号，他们没有同意过，网站也未经审核）。
@@ -84,7 +84,7 @@ tags:
       服务器边缘缓存最长 5 分钟更新一次。
   - name: "连接与授权"
     description: |
-      **推荐：设备授权（RFC 8628）。** 客户端调用 `POST /device/code` 拿到给玩家看的 `user_code` 与同意链接 `verification_uri_complete`；玩家在浏览器里看到客户端名字后点「同意」；客户端每 `interval` 秒调用 `POST /device/token`，同意后拿到 48 位十六进制访问令牌。
+      **推荐：设备授权（RFC 8628）。** 客户端调用 `POST /device/code` 拿到给玩家看的 `user_code` 与同意链接 `verification_uri_complete`；玩家在浏览器里看到客户端名字和所要的权限后点「同意连接」；客户端每 `interval` 秒调用 `POST /device/token`，同意后拿到 48 位十六进制访问令牌。
       **旧方式（仍可用）**：玩家在网页端「我的资料 → 在 VRCX 里提醒」获取 8 位一次性连接码，客户端调用 `POST /connect` 换取令牌。
 
       客户端用 `scope` 指定要的权限（省略时为 `profile notifications crossings mutuals maps maps.rate`），同意页逐项列出。
@@ -310,7 +310,7 @@ paths:
         登记过的网站（`X-Client` 为 `app_…`）也可使用，但权限上限与「用星遇同频登录」相同：省略时只有 `profile`，最多 `profile vrchat card maps maps.rate notifications`。
 
         - 客户端向玩家显示 `user_code`，并在浏览器中打开 `verification_uri_complete`（码已包含在链接中）；玩家也可以在「我的资料 → 第三方客户端」手动输入 `user_code`。
-        - 玩家需已登录星遇同频，会看到客户端名字（未登记的 `dev-` 标识显示「（测试中）」与「还没登记，只在测试」；网站显示其登记的名称）及所要的每一项权限（一项一行），再点「同意」或「不同意」。
+        - 玩家需已登录星遇同频，会看到客户端名字（未登记的 `dev-` 标识显示「（测试中）」与「还没登记，只在测试」；网站显示其登记的名称）及所要的每一项权限（列在「连接后，它可以：」下面，一项一行），再点「同意连接」或「取消」。
         - `device_code` 仅由客户端保存，用于调用 `POST /device/token`，不要展示给玩家。
         - `scope` 中有不认识的权限，或网站要了 `crossings` / `mutuals`：`400 invalid_scope`。
         - 限制：每个网络地址每天最多获取 30 个（超限返回 `429 too_many`）。
@@ -356,7 +356,7 @@ paths:
         设备授权第二步：每隔 `interval` 秒（5 秒）调用一次，**不要更快**；`X-Client` 必须与获取设备码时相同。拿到的令牌之后也只能配这个 `X-Client` 使用（否则 `403 client_mismatch`）。
 
         - 等待中：`400 authorization_pending`，继续等待；
-        - 玩家不同意：`400 access_denied`，停止；
+        - 玩家点了「取消」：`400 access_denied`，停止；
         - 过期（10 分钟）、已换过令牌、客户端不一致或设备码不存在：`400 expired_token`，停止，需要时重新获取设备码；
         - 玩家同意后：`200`，返回令牌（**只返回这一次**，之后再问是 `expired_token`）。
 
@@ -394,12 +394,14 @@ paths:
                   scope:
                     $ref: "#/components/schemas/Scope"
                   me:
-                    $ref: "#/components/schemas/Me"
+                    allOf:
+                      - $ref: "#/components/schemas/Me"
+                    description: "me.vrc 只在有 vrchat 权限时返回，否则为 null"
         '400':
           description: |
             尚未拿到令牌：
             - `authorization_pending`：玩家还没点，过 `interval` 秒再问
-            - `access_denied`：玩家点了不同意
+            - `access_denied`：玩家点了「取消」
             - `expired_token`：已过期、已换过、客户端不一致或设备码不存在
           content:
             application/json:
@@ -411,7 +413,7 @@ paths:
                   value:
                     error: "authorization_pending"
                 denied:
-                  summary: "玩家不同意"
+                  summary: "玩家点了取消"
                   value:
                     error: "access_denied"
                 expired:
@@ -463,7 +465,9 @@ paths:
                     description: "48 位十六进制令牌，仅保存在玩家本机，后续请求放入 Authorization: Bearer <token>"
                     example: "a1b2c3d4e5f60123456789abcdef0123456789abcdef0123"
                   me:
-                    $ref: "#/components/schemas/Me"
+                    allOf:
+                      - $ref: "#/components/schemas/Me"
+                    description: "第三方客户端用连接码连上时 me.vrc 总是 null（默认权限里没有 vrchat）"
         '404':
           description: "连接码错误、已过期或已被使用（code）"
           content:
@@ -1136,12 +1140,12 @@ components:
           authorizationUrl: "https://vrcc.cc/oauth/authorize"
           tokenUrl: "https://vrcc.cc/api/v1/oauth/token"
           scopes:
-            profile: "只给它用的编号和你的星号（总会包含）"
-            vrchat: "你的 VRChat 名字和 ID（验证过才给）"
-            card: "你的星卡：星群、介绍和成分（GET /me/card）"
-            maps: "你在地图榜打的分和短评（GET /me/maps、GET /me/maps/{world}）"
-            maps.rate: "替你给去过的地图打分（POST /me/maps/{world}/rating）"
-            notifications: "收你的提醒（GET /me/notifications、/me/notifications/recent）"
+            profile: "识别你的登录身份，并读取你的星号（总会包含）"
+            vrchat: "查看你的 VRChat 名字和 ID（验证过才提供）"
+            card: "查看你的星卡（星群、介绍和成分）：GET /me/card"
+            maps: "查看你在地图榜的评分和短评：GET /me/maps、GET /me/maps/{world}"
+            maps.rate: "在你操作时，为你去过的地图打分：POST /me/maps/{world}/rating"
+            notifications: "接收你的星遇同频提醒：GET /me/notifications、/me/notifications/recent"
 
   responses:
     ClientError:
@@ -1172,7 +1176,7 @@ components:
           example:
             error: "token"
     ScopeError:
-      description: "令牌没有这个接口要的权限（scope，need 写着缺哪个；要用就让玩家重新授权并要上它），或令牌不是发给这个 X-Client 的（client_mismatch）"
+      description: "令牌不是发给这个 X-Client 的（client_mismatch，先检查），或令牌没有这个接口要的权限（scope，need 写着缺哪个；要用就让玩家重新授权并要上它）"
       content:
         application/json:
           schema:
@@ -1249,7 +1253,7 @@ components:
           example: 128
         vrc:
           type: [string, "null"]
-          description: "玩家当前登记的 VRChat 名字"
+          description: "玩家当前登记的 VRChat 名字（device/token 只在有 vrchat 权限时给；第三方客户端用 connect 时为 null）"
           example: "MyVRCName"
 
     Scope:
@@ -1577,8 +1581,8 @@ components:
             - `yq_empty` (400)：短评仅含符号或空白
             - `bad_request` (400)：请求体或参数格式错误
             - `too_large` (413)：请求体超过 2 KB
-            - `authorization_pending` (400)：设备授权，玩家还没点同意
-            - `access_denied` (400)：设备授权，玩家点了不同意
+            - `authorization_pending` (400)：设备授权，玩家还没点「同意连接」
+            - `access_denied` (400)：设备授权，玩家点了「取消」
             - `expired_token` (400)：设备授权，设备码过期、已换过令牌、客户端不一致或不存在
             - `invalid_request` / `unsupported_grant_type` / `invalid_grant` (400)：用星遇同频登录，换令牌请求有误
             - `invalid_client` (401)：用星遇同频登录，网站未登记 / 已停用、密钥错误或缺少密钥与 PKCE

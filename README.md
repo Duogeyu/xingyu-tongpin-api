@@ -128,7 +128,7 @@ https://vrcc.cc/api/v1/boards/maps?limit=10&client=dev-mywidget
 
 1. **拿码**：`POST /device/code`（可以用 `scope` 只要用得到的[权限](#权限scope)），得到 `user_code`（如 `ABCD-2345`）、`verification_uri_complete` 和 `device_code`。
 2. **给玩家看**：显示 `user_code`，并在浏览器里打开 `verification_uri_complete`（码已经在链接里）。玩家也可以自己去「我的资料 → 第三方客户端」输入码。
-3. **等同意**：每 `interval` 秒（5 秒）`POST /device/token`。等的时候回答 `authorization_pending`，接着等；`access_denied` 是玩家不同意，`expired_token` 是过期了（10 分钟），都停下来，让玩家重新开始。
+3. **等同意**：每 `interval` 秒（5 秒）`POST /device/token`。等的时候回答 `authorization_pending`，接着等；`access_denied` 是玩家点了「取消」，`expired_token` 是过期了（10 分钟），都停下来，让玩家重新开始。
 4. **存令牌**：拿到 `access_token` 后存在玩家本机。它只给一次，之后再问就是 `expired_token`。
 5. **用令牌**：之后的请求都带 `Authorization: Bearer <access_token>`。
 6. **失效了就重来**：收到 `404 gone`，停下轮询，回到第 1 步。
@@ -149,7 +149,7 @@ sequenceDiagram
         App->>API: POST /device/token { "device_code": "…" }
         API-->>App: 400 { "error": "authorization_pending" }
     end
-    Player->>Web: 点「同意」
+    Player->>Web: 点「同意连接」
     App->>API: POST /device/token { "device_code": "…" }
     API-->>App: { "access_token": "…", "token_type": "Bearer", "me": {…} }（只给这一次）
     Note over App: 将 access_token 保存在玩家本机
@@ -205,14 +205,14 @@ sequenceDiagram
 
 | 权限 | 玩家在同意页看到 | 能用的接口 | 客户端不写时 | 网站能要 |
 | --- | --- | --- | :---: | :---: |
-| `profile` | 只给它用的编号和你的星号 | `oauth/userinfo` 的 `sub`、`star` | 总有 | 总有 |
-| `vrchat` | 你的 VRChat 名字和 ID | `oauth/token`、`oauth/userinfo` 的 `vrc` | | ✓ |
-| `card` | 你的星卡：星群、介绍和成分 | `GET me/card` | | ✓ |
-| `maps` | 你在地图榜打的分和短评 | `GET me/maps`、`GET me/maps/{world}` | ✓ | ✓ |
-| `maps.rate` | 替你给去过的地图打分 | `POST me/maps/{world}/rating` | ✓ | ✓ |
-| `notifications` | 收你的提醒 | `GET me/notifications`、`GET me/notifications/recent` | ✓ | ✓ |
-| `crossings` | 看星轨相交 | `GET me/crossings` | ✓ | |
-| `mutuals` | 看互相连上的星和他们的 VRChat 名字 | `GET me/mutuals` | ✓ | |
+| `profile` | 识别你的登录身份，并读取你的星号 {星号}（没有星号时：识别你的登录身份（专属匿名编号）） | `oauth/userinfo` 的 `sub`、`star` | 总有 | 总有 |
+| `vrchat` | 查看你的 VRChat 名字「{名字}」和 ID（没验证时：查看你的 VRChat 名字和 ID（你还没验证，不会提供）） | `oauth/token`、`oauth/userinfo` 的 `vrc` | | ✓ |
+| `card` | 查看你的星卡（星群、介绍和成分） | `GET me/card` | | ✓ |
+| `maps` | 查看你在地图榜的评分和短评 | `GET me/maps`、`GET me/maps/{world}` | ✓ | ✓ |
+| `maps.rate` | 在你操作时，为你去过的地图打分 | `POST me/maps/{world}/rating` | ✓ | ✓ |
+| `notifications` | 接收你的星遇同频提醒 | `GET me/notifications`、`GET me/notifications/recent` | ✓ | ✓ |
+| `crossings` | 查看你的「星轨相交」 | `GET me/crossings` | ✓ | |
+| `mutuals` | 查看与你互相连上的星和他们的 VRChat 名字 | `GET me/mutuals` | ✓ | |
 
 - **桌面客户端**在 `POST /device/code` 里用 `scope` 要，8 项都能要；不写就是 `profile notifications crossings mutuals maps maps.rate`（和我们的 VRCX 脚本一样）。旧的连接码连上的也是这一串。
 - **网站**在 `/oauth/authorize` 里用 `scope` 要；不写只有 `profile`。网站不能要 `crossings` 和 `mutuals`：那里面是别的玩家的名字和 VRChat 账号，他们没同意过，网站也没人审核。
@@ -229,14 +229,14 @@ sequenceDiagram
 | `403` | `client_off` | 这个 `client` 标识已被停用 |
 | `429` | `too_many` | 问得太快或今天次数用完，等至少一分钟后再试 |
 | `401` | `token` | 玩家自己的接口没带令牌，或令牌格式不对 |
-| `403` | `client_mismatch` | 令牌不是发给这个 `X-Client` 的：每个令牌只能配拿到它的那个客户端或网站的标识用 |
+| `403` | `client_mismatch` | 令牌不是发给这个 `X-Client` 的：每个令牌只能配拿到它的那个客户端或网站的标识用（先查这个，再查权限） |
 | `403` | `scope` | 令牌没有这个接口要的权限，`need` 写着缺哪个；要用就让玩家重新授权，这次把它要上 |
 | `404` | `gone` | **令牌失效**（玩家断开了、同一个客户端又授权了一次、星被删除）：停下轮询，让玩家重新授权 |
 | `404` | `not_found` | 没有这个接口，或查询的地图不在榜上 |
 | `400` | `bad_request` | 请求参数或 JSON 格式不对 |
 | `413` | `too_large` | `POST` 正文超过 2 KB |
-| `400` | `authorization_pending` | 设备授权：玩家还没点同意，过 `interval` 秒再问 |
-| `400` | `access_denied` | 设备授权：玩家点了不同意 |
+| `400` | `authorization_pending` | 设备授权：玩家还没点「同意连接」，过 `interval` 秒再问 |
+| `400` | `access_denied` | 设备授权：玩家点了「取消」 |
 | `400` | `expired_token` | 设备授权：码过期了（10 分钟）、已经换过令牌、不是这个客户端的，或没有这个码 |
 | `400` | `invalid_scope` | 设备授权：`scope` 里有不认识的权限，或网站要了网站不能要的 |
 | `400` / `401` | `invalid_request`、`invalid_client`、`invalid_grant` 等 | 用星遇同频登录的错误，见「[换令牌](#第二步换令牌-post-apiv1oauthtoken)」 |
@@ -354,7 +354,7 @@ sequenceDiagram
 | `interval` | 多少秒问一次 `/device/token`（`5`） |
 | `scope` | 这次要的权限（按固定顺序，`profile` 在最前） |
 
-玩家要先登录星遇同频。打开链接后，玩家看到客户端的名字（没登记的 `dev-` 标识会写「（测试中）」和「还没登记，只在测试」；网站显示它登记的网站名称）和要的每一项权限（一项一行），然后点「同意」或「不同意」。
+玩家要先登录星遇同频。打开链接后，玩家看到客户端的名字（没登记的 `dev-` 标识会写「（测试中）」和「还没登记，只在测试」；网站显示它登记的网站名称）和要的每一项权限（列在「连接后，它可以：」下面，一项一行），然后点「同意连接」或「取消」。
 
 - **错误状态**：
   - `400 invalid_scope`：`scope` 里有不认识的权限，或网站要了 `crossings` / `mutuals`
@@ -381,21 +381,22 @@ sequenceDiagram
   "scope": "profile notifications maps maps.rate",
   "me": {
     "star": 128,
-    "vrc": "玩家的 VRChat 名字"
+    "vrc": null
   }
 }
 ```
 
 - `access_token`：48 位十六进制令牌，之后的个人接口都放在 `Authorization: Bearer <access_token>` 里。
 - `scope`：这个令牌的权限。
-- `me`：和「连接码」那里的 `me` 一样。
+- `me.star`：玩家在 `/light/` 的点亮编号，没有时是 `null`。
+- `me.vrc`：玩家的 VRChat 名字，**只在有 `vrchat` 权限时给**，否则是 `null`（上面的例子没要 `vrchat`）。
 
 **还没拿到时（都是 `400`）：**
 
 | `error` | 意思 | 客户端怎么做 |
 | --- | --- | --- |
 | `authorization_pending` | 玩家还没点 | 过 `interval` 秒再问 |
-| `access_denied` | 玩家点了不同意 | 停下，告诉玩家没连上 |
+| `access_denied` | 玩家点了「取消」 | 停下，告诉玩家没连上 |
 | `expired_token` | 过期了（10 分钟）、已经换过令牌、不是这个客户端拿的码，或没有这个码 | 停下，要连就重新拿码 |
 
 ---
@@ -421,13 +422,14 @@ sequenceDiagram
   "token": "a1b2c3d4e5f60123456789abcdef0123456789abcdef0123",
   "me": {
     "star": 128,
-    "vrc": "玩家的 VRChat 名字"
+    "vrc": null
   }
 }
 ```
 
 - `token`：48 位十六进制令牌，之后的所有个人接口都在 `Authorization: Bearer <token>` 请求头里带它。
 - `me.star`：玩家在 `/light/` 的点亮编号，没有时是 `null`。
+- `me.vrc`：第三方客户端用连接码连上时总是 `null`（连接码给的默认权限里没有 `vrchat`）。
 - **错误状态**：
   - `404 code`：连接码不对、已过期或已经用过
   - `429 too_many`：这个网络今天尝试连接次数太多（每天最多 30 次）
@@ -759,7 +761,7 @@ https://vrcc.cc/oauth/authorize?response_type=code
 | `code_challenge_method` | 带 `code_challenge` 时 | 只支持 `S256` |
 | `scope` | 否 | 要的权限，空格分开（逗号、`+` 也行）。不写只有 `profile`；能要的见「[权限](#权限scope)」 |
 
-玩家没登录的会先登录，然后看到：你的网站名、「登录后回到 你的域名」、你要的每一项权限（一项一行，带玩家自己的星号和 VRChat 名字；没验证 VRChat 的写「你还没验证，不会给」），以及「这个网站由玩家自己登记，星遇同频没有审核」。玩家点「继续」或「取消」。
+玩家没登录的会先登录，然后看到：你的网站名、「登录后回到 你的域名」、你要的每一项权限（列在「登录后，该网站可以：」下面，一项一行，带玩家自己的星号和 VRChat 名字；没验证 VRChat 的写「查看你的 VRChat 名字和 ID（你还没验证，不会提供）」），以及「这个网站由玩家自己登记，星遇同频没有审核」。玩家点「继续」或「取消」。
 
 - 点「继续」：回到 `redirect_uri?code=<48 位十六进制>&state=<原样带回>`。`code` **5 分钟内有效，只能用一次**。
 - 点「取消」：回到 `redirect_uri?error=access_denied&state=<原样带回>`。
