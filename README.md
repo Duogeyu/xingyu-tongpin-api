@@ -219,7 +219,7 @@ sequenceDiagram
 | `vrchat` | 查看你的 VRChat 名字「{名字}」和 ID（没验证时：查看你的 VRChat 名字和 ID（你还没验证，不会提供）） | `oauth/token`、`oauth/userinfo` 的 `vrc` | | ✓ |
 | `card` | 查看你的星卡（星群、介绍和成分） | `GET me/card` | | |
 | `maps` | 查看你在地图榜的评分和短评 | `GET me/maps`、`GET me/maps/{world}` | ✓ | |
-| `maps.rate` | 在你操作时，为你去过的地图打分 | `POST me/maps/{world}/rating` | ✓ | ✓ |
+| `maps.rate` | 在你操作时，为地图打分 | `POST me/maps/{world}/rating`、`POST me/maps/{world}/rating/delete` | ✓ | ✓ |
 | `notifications` | 接收你的星遇同频提醒 | `GET me/notifications`、`GET me/notifications/recent` | ✓ | |
 | `crossings` | 查看你的「星轨相交」 | `GET me/crossings` | ✓ | ✓ |
 | `mutuals` | 查看与你互相连上的星和他们的 VRChat 名字 | `GET me/mutuals` | ✓ | ✓ |
@@ -229,7 +229,10 @@ sequenceDiagram
 | `chat` | 查看你的私聊（会看到对方发来的消息） | `GET me/chats`、`GET me/chats/{n}` | | ✓ |
 | `chat.send` | 在你操作时，发送私聊消息 | `POST me/chats/{n}` | | ✓ |
 | `posts` | 查看星友圈（会看到其他玩家的动态） | `GET me/posts` | | ✓ |
-| `posts.write` | 在你操作时，发布星友圈动态 | `POST me/posts` | | ✓ |
+| `posts.write` | 在你操作时，发布星友圈动态 | `POST me/posts`、评论、点亮、删除、合照 | | ✓ |
+| `photos` | 查看其他玩家的照片（互相连上后才是清晰的） | `GET me/stars/{n}/photo` | | ✓ |
+| `maps.write` | 在你操作时，写地图介绍、给短评点赞或踩、添加地图 | `POST me/maps`、`…/intro`、`me/map-votes` | | ✓ |
+| `safety` | 在你操作时，举报或隐藏其他玩家和内容 | 举报、隐藏、`GET me/hidden` | | ✓ |
 
 **敏感权限只给审核过的。** 普通权限（`profile`、`card`、`maps`、`notifications`）谁都能要；打了 ✓ 的敏感权限只给：
 
@@ -857,6 +860,40 @@ sequenceDiagram
 - 每次打开都会重新检查：授权还在、还有 `posts` 权限、客户端没被停用，而且这条动态玩家现在还看得到（没删、没被隐藏，好友可见、星池这些规则照旧）。不满足就是 `404`。
 - 回答：`image/jpeg`，`Cache-Control: private, max-age=600`。算一次读取（每个授权每天 1000 次）。
 - 只有星友圈动态的配图和合照；玩家星卡上的照片不提供。
+
+---
+
+### 第三批：举报和隐藏、评论和点亮、地图榜、照片
+
+做的事和网页一样，网页的规则和上限照样算；每个授权每天另有上限：举报 10、隐藏 50、评论 50、点亮 200、删除 50、地图赞踩 200、添加地图 10、写介绍 10，读取算进 1000 次里。**显示其他玩家内容的客户端，请把举报和隐藏做上**（权限 `safety`）。
+
+| 方法 | 路径 | 权限 | 做什么 | 说明 |
+|---|---|---|---|---|
+| `POST` | `/api/v1/me/stars/{n}/report` | `safety` | 举报一颗星（{why, note}） | why：contact 联系方式、romance 恋爱约会、rude 不友善、ad 广告、harass 骚扰、age 年龄、photo 照片、other；note 最多 100 字。只能举报见过的星（推荐过、连过、在星空里点开过）。 |
+| `POST` | `/api/v1/me/stars/{n}/hide` | `safety` | 隐藏一颗星（拉黑） | 双方都不再互相推荐，TA 连向你的线一并去掉。 |
+| `POST` | `/api/v1/me/stars/{n}/unhide` | `safety` | 恢复显示 |  |
+| `GET` | `/api/v1/me/hidden` | `safety` | 我隐藏的星 | 回答 {blocks: [{n, at, name, vrc, report}]}。 |
+| `POST` | `/api/v1/me/stars/{n}/say` | `link` | 说一句（{text}） | 你已连向 TA、TA 还没连回来时，附一句话，TA 在「连向我」里看到。 |
+| `GET` | `/api/v1/me/stars/{n}/photo` | `photos` | TA 的照片 | 和网页给的一样：没连上是粗的颜色格（grid），TA 连向你是细一点的，互相连上才有清晰照片——这时给 url（签名链接，10 分钟，见「星友圈的图」），不直接给图片数据。?want=0|1|2 可要更粗的。16–17 星池没有照片。 |
+| `POST` | `/api/v1/me/messages/{id}/delete` | `chat.send` | 撤回私聊消息 | 只能撤回自己发的。 |
+| `POST` | `/api/v1/me/messages/{id}/report` | `safety` | 举报私聊消息（{why}） | why：words、harass、other。只能举报别人发给你的，举报后你这边马上看不到。 |
+| `GET` | `/api/v1/me/posts/{id}/comments` | `posts` | 一条动态的评论 | 从早到晚。 |
+| `POST` | `/api/v1/me/posts/{id}/comments` | `posts.write` | 写评论（{text} 或 {sticker}，回复加 re） | 文字要过检查才给别人看到；表情立刻出现。 |
+| `POST` | `/api/v1/me/posts/{id}/light` | `posts.write` | 点亮 / 取消（{on}） | on 默认 true，false 取消。 |
+| `POST` | `/api/v1/me/posts/{id}/delete` | `posts.write` | 删自己的动态 |  |
+| `POST` | `/api/v1/me/posts/{id}/with` | `posts.write` | 同意或拒绝合照（{yes}） | 别人发了和你的合照，要你同意才发出。 |
+| `POST` | `/api/v1/me/posts/{id}/report` | `safety` | 举报动态（{why}） | why：words、pic、person、other。 |
+| `POST` | `/api/v1/me/comments/{cid}/delete` | `posts.write` | 删评论 | 自己的评论，或别人在你动态下的评论。 |
+| `POST` | `/api/v1/me/comments/{cid}/report` | `safety` | 举报评论（{why}） |  |
+| `GET` | `/api/v1/me/board` | `maps` | 玩家看到的地图榜（?sort=top|week|new|went&q=） | 和网页「榜单」一样，带玩家自己的评分、去过、热评（hots）；q 搜榜上的地图名或作者。 |
+| `POST` | `/api/v1/me/maps` | `maps.write` | 添加地图（{world}） | world 是 wrld_… 或地图链接；要过地图检查才上榜。 |
+| `GET` | `/api/v1/me/maps/{world}/page` | `maps` | 地图页（?sort=hot|new） | 分数分布、介绍、短评（最热：去过 > 已验证 > 赞）、配置、正在开的房。 |
+| `GET` | `/api/v1/me/maps/{world}/intros` | `maps` | 这张地图的全部介绍 |  |
+| `POST` | `/api/v1/me/maps/{world}/intro` | `maps.write` | 写介绍（{text}） | 最多 200 字，过检查后显示。 |
+| `POST` | `/api/v1/me/maps/{world}/intro/delete` | `maps.write` | 删自己的介绍 |  |
+| `POST` | `/api/v1/me/maps/{world}/rating/delete` | `maps.rate` | 删自己的评分 |  |
+| `POST` | `/api/v1/me/map-votes` | `maps.write` | 给短评或介绍点赞 / 踩（{kind: rate|intro, id, v: 1|-1|0}） | 0 取消。不能投自己的。 |
+| `POST` | `/api/v1/me/map-reports` | `safety` | 举报短评或介绍（{kind: rate|intro, id, why}） | why：words、person、other。 |
 
 ---
 

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.5.0"
+  version: "1.6.0"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -26,7 +26,7 @@ info:
     | `vrchat` | 查看你的 VRChat 名字「{名字}」和 ID（没验证时：查看你的 VRChat 名字和 ID（你还没验证，不会提供）） | `oauth/token`、`oauth/userinfo` 的 `vrc` | | ✓ |
     | `card` | 查看你的星卡（星群、介绍和成分） | `GET /me/card` | | |
     | `maps` | 查看你在地图榜的评分和短评 | `GET /me/maps`、`GET /me/maps/{world}` | ✓ | |
-    | `maps.rate` | 在你操作时，为你去过的地图打分 | `POST /me/maps/{world}/rating` | ✓ | ✓ |
+    | `maps.rate` | 在你操作时，为地图打分 | `POST /me/maps/{world}/rating` | ✓ | ✓ |
     | `notifications` | 接收你的星遇同频提醒 | `GET /me/notifications`、`GET /me/notifications/recent` | ✓ | |
     | `crossings` | 查看你的「星轨相交」 | `GET /me/crossings` | ✓ | ✓ |
     | `mutuals` | 查看与你互相连上的星和他们的 VRChat 名字 | `GET /me/mutuals` | ✓ | ✓ |
@@ -882,6 +882,18 @@ paths:
           $ref: "#/components/responses/Error"
 
   /me/maps:
+    post:
+      tags: ["网页上的动作"]
+      summary: "添加地图"
+      description: |
+        **需要权限 `maps.write`。** world 是 wrld_… 或地图链接；要过地图检查才上榜。 请求体：{world}。
+      security:
+        - client: []
+          token: []
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
     get:
       tags: ["玩家个人数据"]
       summary: "获取我打过分的地图"
@@ -1065,6 +1077,357 @@ paths:
           description: "签名不对、过期、授权或权限没了，或者这条动态玩家已经看不到"
         "429":
           description: "今天的读取次数用完了"
+  /me/stars/{n}/report:
+    post:
+      tags: ["网页上的动作"]
+      summary: "举报一颗星"
+      description: |
+        **需要权限 `safety`。** why：contact 联系方式、romance 恋爱约会、rude 不友善、ad 广告、harass 骚扰、age 年龄、photo 照片、other；note 最多 100 字。只能举报见过的星（推荐过、连过、在星空里点开过）。 请求体：{why, note}。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: n, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/stars/{n}/hide:
+    post:
+      tags: ["网页上的动作"]
+      summary: "隐藏一颗星（拉黑）"
+      description: |
+        **需要权限 `safety`。** 双方都不再互相推荐，TA 连向你的线一并去掉。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: n, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/stars/{n}/unhide:
+    post:
+      tags: ["网页上的动作"]
+      summary: "恢复显示"
+      description: |
+        **需要权限 `safety`。** 
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: n, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/hidden:
+    get:
+      tags: ["网页上的动作"]
+      summary: "我隐藏的星"
+      description: |
+        **需要权限 `safety`。** 回答 {blocks: [{n, at, name, vrc, report}]}。
+      security:
+        - client: []
+          token: []
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/stars/{n}/say:
+    post:
+      tags: ["网页上的动作"]
+      summary: "说一句"
+      description: |
+        **需要权限 `link`。** 你已连向 TA、TA 还没连回来时，附一句话，TA 在「连向我」里看到。 请求体：{text}。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: n, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/stars/{n}/photo:
+    get:
+      tags: ["网页上的动作"]
+      summary: "TA 的照片"
+      description: |
+        **需要权限 `photos`。** 和网页给的一样：没连上是粗的颜色格（grid），TA 连向你是细一点的，互相连上才有清晰照片——这时给 url（签名链接，10 分钟，见「星友圈的图」），不直接给图片数据。?want=0|1|2 可要更粗的。16–17 星池没有照片。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: n, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/messages/{id}/delete:
+    post:
+      tags: ["网页上的动作"]
+      summary: "撤回私聊消息"
+      description: |
+        **需要权限 `chat.send`。** 只能撤回自己发的。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/messages/{id}/report:
+    post:
+      tags: ["网页上的动作"]
+      summary: "举报私聊消息"
+      description: |
+        **需要权限 `safety`。** why：words、harass、other。只能举报别人发给你的，举报后你这边马上看不到。 请求体：{why}。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/posts/{id}/comments:
+    get:
+      tags: ["网页上的动作"]
+      summary: "一条动态的评论"
+      description: |
+        **需要权限 `posts`。** 从早到晚。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+    post:
+      tags: ["网页上的动作"]
+      summary: "写评论"
+      description: |
+        **需要权限 `posts.write`。** 文字要过检查才给别人看到；表情立刻出现。 请求体：{text} 或 {sticker}，回复加 re。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/posts/{id}/light:
+    post:
+      tags: ["网页上的动作"]
+      summary: "点亮 / 取消"
+      description: |
+        **需要权限 `posts.write`。** on 默认 true，false 取消。 请求体：{on}。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/posts/{id}/delete:
+    post:
+      tags: ["网页上的动作"]
+      summary: "删自己的动态"
+      description: |
+        **需要权限 `posts.write`。** 
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/posts/{id}/with:
+    post:
+      tags: ["网页上的动作"]
+      summary: "同意或拒绝合照"
+      description: |
+        **需要权限 `posts.write`。** 别人发了和你的合照，要你同意才发出。 请求体：{yes}。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/posts/{id}/report:
+    post:
+      tags: ["网页上的动作"]
+      summary: "举报动态"
+      description: |
+        **需要权限 `safety`。** why：words、pic、person、other。 请求体：{why}。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/comments/{cid}/delete:
+    post:
+      tags: ["网页上的动作"]
+      summary: "删评论"
+      description: |
+        **需要权限 `posts.write`。** 自己的评论，或别人在你动态下的评论。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: cid, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/comments/{cid}/report:
+    post:
+      tags: ["网页上的动作"]
+      summary: "举报评论"
+      description: |
+        **需要权限 `safety`。**  请求体：{why}。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: cid, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/board:
+    get:
+      tags: ["网页上的动作"]
+      summary: "玩家看到的地图榜"
+      description: |
+        **需要权限 `maps`。** 和网页「榜单」一样，带玩家自己的评分、去过、热评（hots）；q 搜榜上的地图名或作者。 请求体：?sort=top|week|new|went&q=。
+      security:
+        - client: []
+          token: []
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/maps/{world}/page:
+    get:
+      tags: ["网页上的动作"]
+      summary: "地图页"
+      description: |
+        **需要权限 `maps`。** 分数分布、介绍、短评（最热：去过 > 已验证 > 赞）、配置、正在开的房。 请求体：?sort=hot|new。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: world, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/maps/{world}/intros:
+    get:
+      tags: ["网页上的动作"]
+      summary: "这张地图的全部介绍"
+      description: |
+        **需要权限 `maps`。** 
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: world, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/maps/{world}/intro:
+    post:
+      tags: ["网页上的动作"]
+      summary: "写介绍"
+      description: |
+        **需要权限 `maps.write`。** 最多 200 字，过检查后显示。 请求体：{text}。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: world, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/maps/{world}/intro/delete:
+    post:
+      tags: ["网页上的动作"]
+      summary: "删自己的介绍"
+      description: |
+        **需要权限 `maps.write`。** 
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: world, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/maps/{world}/rating/delete:
+    post:
+      tags: ["网页上的动作"]
+      summary: "删自己的评分"
+      description: |
+        **需要权限 `maps.rate`。** 
+      security:
+        - client: []
+          token: []
+      parameters:
+        - { name: world, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/map-votes:
+    post:
+      tags: ["网页上的动作"]
+      summary: "给短评或介绍点赞 / 踩"
+      description: |
+        **需要权限 `maps.write`。** 0 取消。不能投自己的。 请求体：{kind: rate|intro, id, v: 1|-1|0}。
+      security:
+        - client: []
+          token: []
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
+  /me/map-reports:
+    post:
+      tags: ["网页上的动作"]
+      summary: "举报短评或介绍"
+      description: |
+        **需要权限 `safety`。** why：words、person、other。 请求体：{kind: rate|intro, id, why}。
+      security:
+        - client: []
+          token: []
+      responses:
+        "200": { description: "和网页同一个动作的回答" }
+        "403": { description: "权限不够（scope / scope_unreviewed）" }
+        "429": { description: "今天的次数用完了" }
   /me/today:
     get:
       tags: ["网页上的动作"]
@@ -1639,7 +2002,7 @@ components:
             vrchat: "查看你的 VRChat 名字和 ID（验证过才提供）"
             card: "查看你的星卡（星群、介绍和成分）：GET /me/card"
             maps: "查看你在地图榜的评分和短评：GET /me/maps、GET /me/maps/{world}"
-            maps.rate: "在你操作时，为你去过的地图打分：POST /me/maps/{world}/rating"
+            maps.rate: "在你操作时，为地图打分：POST /me/maps/{world}/rating"
             notifications: "接收你的星遇同频提醒：GET /me/notifications、/me/notifications/recent"
             crossings: "查看你的「星轨相交」：GET /me/crossings"
             mutuals: "查看与你互相连上的星和他们的 VRChat 名字：GET /me/mutuals"
