@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.6.0"
+  version: "1.7.0"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -1428,6 +1428,22 @@ paths:
         "200": { description: "和网页同一个动作的回答" }
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
+  /status:
+    get:
+      tags: ["开放数据"]
+      summary: "运行状态"
+      operationId: getStatus
+      description: |
+        接口和数据库能不能用。不用 `client`。页面版：https://vrcc.cc/status/
+      security: []
+      responses:
+        "200":
+          description: "正常"
+          content:
+            application/json:
+              schema: { type: object, properties: { at: { type: integer }, state: { type: string, enum: ["ok"] } } }
+        "500":
+          description: "接口出问题了"
   /me/today:
     get:
       tags: ["网页上的动作"]

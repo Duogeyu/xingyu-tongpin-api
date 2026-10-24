@@ -625,6 +625,7 @@ sequenceDiagram
 ```json
 {
   "star": 128,
+  "verified": true,
   "name": "拾光旅人",
   "line": "放慢脚步逛世界，在角落拍下别人没注意到的光。",
   "group": "G",
@@ -638,6 +639,7 @@ sequenceDiagram
 | 字段 | 说明 |
 | --- | --- |
 | `star` | `/light/` 点亮编号，没有时是 `null` |
+| `verified` | 有没有验证过 VRChat 账号 |
 | `name` / `line` | 星位名和一句描述 |
 | `group` / `groupName` | 所属星群代号（`G` 漫游、`W` 游戏、`Z` 创作、`L` 聊天、`A` 万象）和名字 |
 | `vibe` | `安静`、`随场` 或 `热闹` |
@@ -1029,6 +1031,7 @@ grant_type=authorization_code
   "user": {
     "sub": "3f9a1c7e5b2d4f6081a2b3c4d5e6f708",
     "star": 128,
+    "verified": true,
     "vrc": { "id": "usr_01234567-89ab-cdef-0123-456789abcdef", "name": "MyVRCName" }
   }
 }
@@ -1056,7 +1059,7 @@ grant_type=authorization_code
 curl -H "Authorization: Bearer <access_token>" https://vrcc.cc/api/v1/oauth/userinfo
 ```
 
-- **成功（`200`）**：和上面的 `user` 一样：`{"sub": "…", "star": 128, "vrc": {…}}`。
+- **成功（`200`）**：和上面的 `user` 一样：`{"sub": "…", "star": 128, "verified": true, "vrc": {…}}`。`verified` 是玩家有没有验证过 VRChat 账号，只要 `profile` 就有；账号本身（`vrc`）要 `vrchat` 权限。
 - **`401 invalid_token`**：玩家在「我的资料 → 第三方客户端」断开了你的网站，或网站被停用。把这位玩家当成登出，要用就让 TA 重新登录。
 - 审核被撤回后，`vrc` 会变成 `null`，`sub` 和 `star` 照常。
 
@@ -1074,6 +1077,12 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 - 只能调权限里有的接口，别的回答 `403 scope`；敏感接口在审核没通过或被撤回时回答 `403 scope_unreviewed`。玩家断开以后回答 `404 gone`。
 - 令牌只能配你自己的 `client_id` 用，`X-Client` 换成别的标识回答 `403 client_mismatch`。
 - 字段、限制和桌面客户端一样，见「[玩家自己的接口](#玩家自己的接口)」。
+
+---
+
+## 运行状态
+
+[vrcc.cc/status](https://vrcc.cc/status/) 显示网站和开放接口现在能不能用，每分钟检查一次。程序里可以用 `GET /api/v1/status`：不用 `client`，回答 `{"at": 毫秒时间, "state": "ok"}`；连不上或回答不是 `200`，就是接口出问题了。
 
 ---
 
