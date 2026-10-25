@@ -629,6 +629,7 @@ sequenceDiagram
 
 ```json
 {
+  "n": 77,
   "star": 128,
   "verified": true,
   "name": "拾光旅人",
@@ -644,6 +645,7 @@ sequenceDiagram
 
 | 字段 | 说明 |
 | --- | --- |
+| `n` | 玩家自己的星编号，和其他星卡的 `n` 一样；用它调 `me/stars/{n}/photo` 拿自己的清晰照片 |
 | `star` | `/light/` 点亮编号，没有时是 `null` |
 | `verified` | 有没有验证过 VRChat 账号 |
 | `name` / `line` | 星位名和一句描述 |
@@ -890,7 +892,7 @@ sequenceDiagram
 | `POST` | `/api/v1/me/stars/{n}/unhide` | `safety` | 恢复显示 |  |
 | `GET` | `/api/v1/me/hidden` | `safety` | 我隐藏的星 | 回答 {blocks: [{n, at, name, vrc, report}]}。 |
 | `POST` | `/api/v1/me/stars/{n}/say` | `link` | 说一句（{text}） | 你已连向 TA、TA 还没连回来时，附一句话，TA 在「连向我」里看到。 |
-| `GET` | `/api/v1/me/stars/{n}/photo` | `photos` | TA 的照片 | 和网页给的一样：没连上是粗的颜色格（grid），TA 连向你是细一点的，互相连上才有清晰照片——这时给 url（签名链接，10 分钟，见「星友圈的图」），不直接给图片数据。?want=0|1|2 可要更粗的。16–17 星池没有照片。 |
+| `GET` | `/api/v1/me/stars/{n}/photo` | `photos` | TA 的照片 | 和网页给的一样：没连上是粗的颜色格（grid），TA 连向你是细一点的，互相连上才有清晰照片——这时给 url（签名链接，10 分钟，见「星友圈的图」），不直接给图片数据。?want=0|1|2 可要更粗的。16–17 星池没有照片。自己的照片（`n` 用 `me/card` 里的）总是清晰的。 |
 | `POST` | `/api/v1/me/messages/{id}/delete` | `chat.send` | 撤回私聊消息 | 只能撤回自己发的。 |
 | `POST` | `/api/v1/me/messages/{id}/report` | `safety` | 举报私聊消息（{why}） | why：words、harass、other。只能举报别人发给你的，举报后你这边马上看不到。 |
 | `GET` | `/api/v1/me/posts/{id}/comments` | `posts` | 一条动态的评论 | 从早到晚。 |

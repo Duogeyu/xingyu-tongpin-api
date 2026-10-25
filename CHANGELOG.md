@@ -2,6 +2,10 @@
 
 接口要变的地方先写在这里，旧的写法会留一段时间再停。
 
+## 2026-10-25 · 星卡给自己的编号
+
+- `GET me/card` 多了 `n`：玩家自己的星编号。`me/stars/{n}/photo` 用自己的 `n` 总是清晰照片（不用和自己连上）。
+
 ## 2026-10-25 · 设备授权认表单
 
 - `device/code`、`device/token` 的正文可以是表单（`application/x-www-form-urlencoded`），之前只认 JSON、表单回 400 `bad_request`。

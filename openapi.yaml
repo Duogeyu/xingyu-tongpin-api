@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.8.2"
+  version: "1.8.3"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -1158,7 +1158,7 @@ paths:
       tags: ["网页上的动作"]
       summary: "TA 的照片"
       description: |
-        **需要权限 `photos`。** 和网页给的一样：没连上是粗的颜色格（grid），TA 连向你是细一点的，互相连上才有清晰照片——这时给 url（签名链接，10 分钟，见「星友圈的图」），不直接给图片数据。?want=0|1|2 可要更粗的。16–17 星池没有照片。
+        **需要权限 `photos`。** 和网页给的一样：没连上是粗的颜色格（grid），TA 连向你是细一点的，互相连上才有清晰照片——这时给 url（签名链接，10 分钟，见「星友圈的图」），不直接给图片数据。?want=0|1|2 可要更粗的。16–17 星池没有照片。自己的照片（n 用 me/card 里的）总是清晰的。
       security:
         - client: []
           token: []
@@ -2210,8 +2210,12 @@ components:
 
     Card:
       type: object
-      required: [star, name, line, group, groupName, vibe, scores, intro]
+      required: [n, star, name, line, group, groupName, vibe, scores, intro]
       properties:
+        n:
+          type: integer
+          description: "玩家自己的星编号（和其他星卡的 n 一样）；me/stars/{n}/photo 用它拿自己的清晰照片"
+          example: 77
         star:
           type: [integer, "null"]
           description: "/light/ 点亮编号（没有时为 null）"
