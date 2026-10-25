@@ -365,6 +365,8 @@ sequenceDiagram
 { "scope": "notifications maps maps.rate" }
 ```
 
+正文也可以是表单（`Content-Type: application/x-www-form-urlencoded`，`scope=profile+maps`，RFC 8628 的写法），或者把 `scope` 放在查询串里（`/api/v1/device/code?scope=profile+maps`，正文里有时以正文为准）。`device/token` 同样认表单。
+
 不写 `scope` 时：开 Issue 登记的客户端是 `profile notifications crossings mutuals maps maps.rate`，`dev-` 是 `profile notifications maps`，自助登记的应用（`X-Client` 填 `client_id`）只有 `profile`。`profile` 总会加上。敏感权限要审核，见「[权限](#权限scope)」。
 
 **成功回答（`200`）：**
