@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.8.3"
+  version: "1.8.4"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -639,7 +639,7 @@ paths:
         **需要权限 `notifications`。**
 
         获取最近 24 小时内的最后 5 条提醒（**新的在前**），包含对应的站内跳转路径 `url`。
-        与 `/me/crossings`、`/me/mutuals`、`/me/maps/{world}` 共享每颗星每天 300 次的查看额度。
+        与 `/me/crossings`、`/me/mutuals`、`/me/maps/{world}` 共享每个授权每天 1000 次的查看额度。
       security:
         - client: []
           token: []
@@ -905,7 +905,7 @@ paths:
         **需要权限 `maps`。**
 
         玩家在地图榜打过分的地图（最近打的在前，最多 200 张），含短评与审核状态。
-        与 `/me/notifications/recent`、`/me/crossings`、`/me/mutuals`、`/me/maps/{world}` 共享每颗星每天 300 次的查看额度。
+        与 `/me/notifications/recent`、`/me/crossings`、`/me/mutuals`、`/me/maps/{world}` 共享每个授权每天 1000 次的查看额度。
       security:
         - client: []
           token: []
