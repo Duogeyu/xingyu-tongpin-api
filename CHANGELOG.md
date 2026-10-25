@@ -2,6 +2,11 @@
 
 接口要变的地方先写在这里，旧的写法会留一段时间再停。
 
+## 2026-10-25 · 星卡的装扮、贴纸素材
+
+- `GET me/card` 多了 `deco`（`me/today`、`me/inbox` 的星卡本来就有），文档写清楚了它的格式。
+- 贴纸素材：`GET /api/v1/stickers`（所有贴纸和材质的名字）、`GET /api/v1/stickers/{id}?fin=&wear=&seed=`（和网页同一份代码画的 SVG）。不用 `client`。卡面、卡套、卡背只给 id。
+
 ## 2026-10-25 · 是否已验证、运行状态
 
 - `oauth/userinfo`（和换令牌时的 `user`）、`GET me/card` 多了 `verified`：玩家有没有验证过 VRChat 账号。只要普通权限，不给账号本身。

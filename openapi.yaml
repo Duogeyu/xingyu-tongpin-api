@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.7.0"
+  version: "1.8.0"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -97,6 +97,9 @@ tags:
     description: |
       所有人可见的地图榜公开数据，无需登录令牌。每次请求需携带 `X-Client` 请求头（或在 URL 中附加 `?client=`，方便 VRChat Udon `VRCStringDownloader` 调用）。
       服务器边缘缓存最长 5 分钟更新一次。
+  - name: "贴纸素材"
+    description: |
+      星卡上的贴纸，照网页的样子画。不用 `client`、不用令牌。只用来显示玩家星卡上的贴纸，不要当应用图标、表情包或单独售卖。
   - name: "连接与授权"
     description: |
       **推荐：设备授权（RFC 8628）。** 客户端调用 `POST /device/code` 拿到给玩家看的 `user_code` 与同意链接 `verification_uri_complete`；玩家在浏览器里看到客户端名字和所要的权限后点「同意连接」；客户端每 `interval` 秒调用 `POST /device/token`，同意后拿到 48 位十六进制访问令牌。
@@ -1428,6 +1431,59 @@ paths:
         "200": { description: "和网页同一个动作的回答" }
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
+  /stickers:
+    get:
+      tags: ["贴纸素材"]
+      summary: "所有贴纸"
+      operationId: listStickers
+      description: |
+        每张贴纸的名字、能有的材质和图片地址，以及材质的名字。不用 `client`。缓存一天。
+      security: []
+      responses:
+        "200":
+          description: "贴纸和材质"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stickers:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        name: { type: string, example: "猫猫头" }
+                        finishes: { type: array, items: { type: string }, example: ["paper", "glitter", "holo", "gold", "embroid", "clear"] }
+                        url: { type: string, example: "https://vrcc.cc/api/v1/stickers/cat" }
+                  finishes:
+                    type: object
+                    additionalProperties: { type: string }
+                    example: { paper: "纸质", glitter: "闪粉", holo: "镭射", gold: "烫金", embroid: "刺绣", clear: "透明" }
+  /stickers/{id}:
+    get:
+      tags: ["贴纸素材"]
+      summary: "一张贴纸"
+      operationId: getSticker
+      description: |
+        和网页同一份代码画的贴纸（SVG）。星卡 `deco.spots` 的一项 `[位置号, 贴纸, 材质, 磨损, 种子, 摆放]` 直接拼成地址。图片贴纸（只有 `paper`）跳到它的 webp。不用 `client`。只用来显示玩家星卡上的贴纸。
+      security: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string }, example: cat }
+        - { name: fin, in: query, schema: { type: string, default: paper }, description: "材质" }
+        - { name: wear, in: query, schema: { type: number, minimum: 0, maximum: 5, default: 0 }, description: "磨损，0 全新到 5" }
+        - { name: seed, in: query, schema: { type: integer, default: 1 }, description: "划痕落在哪里" }
+      responses:
+        "200":
+          description: "贴纸的图"
+          content:
+            image/svg+xml:
+              schema: { type: string }
+        "302":
+          description: "图片贴纸：跳到它的 webp"
+        "400":
+          description: "材质、磨损或种子不对"
+        "404":
+          description: "没有这张贴纸"
   /status:
     get:
       tags: ["开放数据"]
@@ -2293,6 +2349,21 @@ components:
         friends:
           type: [integer, "null"]
           description: "共同的星友数（对方不公开时为 null）"
+        deco:
+          $ref: "#/components/schemas/Deco"
+
+    Deco:
+      type: [object, "null"]
+      description: "星卡的装扮；没装扮时为 null。卡面、卡套、卡背只给 id"
+      properties:
+        face: { type: string, example: "polaroid" }
+        sleeve: { type: string, example: "holo" }
+        back: { type: string, example: "airmail" }
+        spots:
+          type: array
+          description: "卡面上的贴纸：[位置号, 贴纸, 材质, 磨损 0–5, 种子, 摆放]；摆放是 [x %, y %, 宽度 %, 旋转 °]，中心点、按卡宽和卡高（高 = 宽 × 4/3），早期贴纸没有摆放"
+          items: { type: array }
+          example: [[0, "cat", "holo", 1.25, 4321, [30, 40, 22, -8]]]
 
     Peer:
       type: object

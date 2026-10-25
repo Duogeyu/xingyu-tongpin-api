@@ -20,6 +20,7 @@
 - [请求规范与通用错误](#请求规范与通用错误)（[权限](#权限scope)）
 - [开放数据：地图榜](#开放数据地图榜)
 - [玩家自己的接口](#玩家自己的接口)（[设备授权](#设备授权post-apiv1devicecode)）
+- [贴纸素材](#贴纸素材)
 - [用星遇同频登录（网站）](#用星遇同频登录网站)
 - [频率限制](#频率限制)
 - [最小示例](#示例)
@@ -34,6 +35,8 @@
 | **地图榜** | `GET` | [`/api/v1/boards/maps`](#排行get-apiv1boardsmapslimit20) | `client` | 地图榜总榜排行（满 5 人评分，按名次排，`limit` 1–100） |
 | **地图榜** | `GET` | [`/api/v1/maps`](#查几张地图get-apiv1mapsidswrld_wrld_) | `client` | 按世界 ID 批量查几张地图（最多 20 张，只返回在榜上的） |
 | **地图榜** | `GET` | [`/api/v1/maps/{world}`](#查一张地图get-apiv1mapsworld) | `client` | 查单张地图在地图榜上的数据 |
+| **素材** | `GET` | [`/api/v1/stickers`](#贴纸素材) | 无 | 所有贴纸的名字、材质和图片地址 |
+| **素材** | `GET` | [`/api/v1/stickers/{id}`](#一张贴纸get-apiv1stickersidfinwearseed) | 无 | 一张贴纸的图（SVG），按材质、磨损画 |
 | **连接** | `POST` | [`/api/v1/device/code`](#设备授权post-apiv1devicecode) | `client` | 设备授权第一步：拿一个给玩家看的码和同意链接（推荐） |
 | **连接** | `POST` | [`/api/v1/device/token`](#换令牌post-apiv1devicetoken) | `client` | 设备授权第二步：每 5 秒问一次，玩家同意后拿到 48 位令牌 |
 | **连接** | `POST` | [`/api/v1/connect`](#连接码旧方式post-apiv1connect) | `client` | 旧方式：用玩家给的 8 位连接码换令牌（还能用） |
@@ -632,7 +635,8 @@ sequenceDiagram
   "groupName": "漫游星群",
   "vibe": "安静",
   "scores": { "G": 82, "W": 40, "Z": 35, "L": 61 },
-  "intro": "星卡上的介绍"
+  "intro": "星卡上的介绍",
+  "deco": { "face": "polaroid", "sleeve": "holo", "back": "airmail", "spots": [[0, "cat", "holo", 1.25, 4321, [30, 40, 22, -8]]] }
 }
 ```
 
@@ -645,6 +649,7 @@ sequenceDiagram
 | `vibe` | `安静`、`随场` 或 `热闹` |
 | `scores` | 四个星群的成分，0–100 |
 | `intro` | 星卡介绍；还在写（AI 生成中）时是 `null` |
+| `deco` | 星卡的装扮，格式见[星卡上的贴纸](#星卡上的贴纸)；没装扮时是 `null` |
 
 ---
 
@@ -1077,6 +1082,57 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 - 只能调权限里有的接口，别的回答 `403 scope`；敏感接口在审核没通过或被撤回时回答 `403 scope_unreviewed`。玩家断开以后回答 `404 gone`。
 - 令牌只能配你自己的 `client_id` 用，`X-Client` 换成别的标识回答 `403 client_mismatch`。
 - 字段、限制和桌面客户端一样，见「[玩家自己的接口](#玩家自己的接口)」。
+
+---
+
+## 贴纸素材
+
+星卡上的贴纸可以照网页的样子画出来。不用 `client`，也不用令牌，`<img>` 直接能用。这些图只用来显示玩家星卡上的贴纸，不要拿来当应用图标、表情包，也不要单独拿去卖。
+
+### 星卡上的贴纸
+
+`me/card`、`me/today`、`me/inbox` 等返回的星卡都有 `deco`（没装扮时是 `null`）：
+
+```json
+"deco": {
+  "face": "polaroid",
+  "sleeve": "holo",
+  "back": "airmail",
+  "spots": [[0, "cat", "holo", 1.25, 4321, [30, 40, 22, -8]]]
+}
+```
+
+| 字段 | 说明 |
+| --- | --- |
+| `face` / `sleeve` / `back` | 卡面、卡套、卡背的 id。只给 id，不提供它们的图和画法 |
+| `spots` | 卡面上的贴纸，每一项是 `[位置号, 贴纸, 材质, 磨损, 种子, 摆放]` |
+
+- **贴纸、材质**：`GET /api/v1/stickers` 里的 id。
+- **磨损**：0（全新）到 5，越大磨得越多，4 以后只剩图标；磨穿的贴纸不会再出现。
+- **种子**：划痕落在哪里，和网页上那张一样。
+- **摆放**：`[x, y, 宽度, 旋转]`。x、y 是贴纸中心在卡上的位置，分别是卡宽、卡高的百分比（卡的高是宽的 4/3）；宽度是卡宽的百分比；旋转是角度，顺时针为正。早期贴上的贴纸没有摆放，它们在卡面的默认位置（位置号 0–4），默认位置不提供，可以自己安排。
+
+把一项拼成图片地址：`https://vrcc.cc/api/v1/stickers/{贴纸}?fin={材质}&wear={磨损}&seed={种子}`。
+
+### 所有贴纸：`GET /api/v1/stickers`
+
+```json
+{
+  "stickers": {
+    "cat": { "name": "猫猫头", "finishes": ["paper", "glitter", "holo", "gold", "embroid", "clear"], "url": "https://vrcc.cc/api/v1/stickers/cat" },
+    "peek": { "name": "QUASO", "finishes": ["paper"], "url": "https://vrcc.cc/api/v1/stickers/peek" }
+  },
+  "finishes": { "paper": "纸质", "glitter": "闪粉", "holo": "镭射", "gold": "烫金", "embroid": "刺绣", "clear": "透明" }
+}
+```
+
+缓存一天，以后可能会加新贴纸。
+
+### 一张贴纸：`GET /api/v1/stickers/{id}?fin=&wear=&seed=`
+
+返回 SVG（`image/svg+xml`），和网页用同一份代码画，大小随你缩放。`fin` 默认 `paper`，`wear` 默认 0，`seed` 默认 1；材质不在这张贴纸的 `finishes` 里、磨损不在 0–5、种子不是整数时返回 `400`，没有这张贴纸返回 `404`。图片贴纸（只有 `paper` 的那几张）会跳到它的 webp。
+
+镭射、烫金这些反光跟着 CSS 变量 `--tx`、`--ty`（−1 到 1）走：把 SVG 直接放进页面时，可以随鼠标或手机倾斜改这两个值；用 `<img>` 时是静止的。
 
 ---
 
