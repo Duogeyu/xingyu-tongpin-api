@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.8.6"
+  version: "1.9.0"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -57,7 +57,7 @@ info:
 
     1. **先登记标识**：开发自测阶段可使用 `dev-` 开头的标识（如 `dev-mywidget`）。正式发布前，请在 [GitHub 仓库](https://github.com/vrcc-cc/xingyu-tongpin-api/issues) 提交标题为「**登记客户端**」的 Issue，写明：**名称、拟定的 `client` 标识、源码或世界地址、调用的接口、用途、联系方式**。核对通过加入白名单后方可正式使用。
     2. **每次请求携带 `client`**：优先使用请求头 `X-Client: <标识>`；无法设置请求头的环境（如 VRChat Udon）可在开放数据接口使用 URL 参数 `?client=<标识>`。
-    3. **遵守频率限制**：遇到 `429` 请至少等待 60 秒再试；开放数据每 5 分钟才更新一次，请做好本地缓存。
+    3. **遵守频率限制**：遇到 `429` 请按回答的 `Retry-After`（秒）等到点再试；开放数据每 5 分钟才更新一次，请做好本地缓存。
     4. **玩家数据安全与透明（调用玩家接口必守）**：
        - **源码公开**：玩家必须能看到你的客户端如何使用令牌。
        - **直连官方**：设备码、连接码与令牌仅保存在玩家本机，只发往 `https://vrcc.cc/api/v1/`，严禁经过任何第三方服务器。
@@ -540,6 +540,12 @@ paths:
                 ok: true
         '401':
           $ref: "#/components/responses/AuthError"
+        '403':
+          description: "client_mismatch：令牌不是发给这个 X-Client 的"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
         default:
           $ref: "#/components/responses/Error"
 
@@ -1062,7 +1068,7 @@ paths:
       operationId: getPostImage
       description: |
         用 `GET /me/posts` 里 `img.url` 给的地址，不用自己拼，不需要请求头（`client` 在地址里）。签名只对拿到它的授权有效，10 分钟后过期。
-        每次打开都重新检查：授权还在、有 `posts` 权限、客户端没被停用、这条动态玩家现在还看得到；不满足返回 404。算一次读取（每个授权每天 1000 次）。
+        每次打开都重新检查：授权还在、有 `posts` 权限、客户端没被停用、这条动态玩家现在还看得到；不满足返回 `404 {"error": "expired"}`（令牌没事，重新请求列表拿新链接）。算一次读取（每个授权每天 1000 次）。
         只有星友圈动态的配图和合照，不提供玩家星卡上的照片。
       parameters:
         - { name: id, in: path, required: true, description: "动态的 id", schema: { type: integer } }
@@ -1077,7 +1083,7 @@ paths:
             image/jpeg:
               schema: { type: string, format: binary }
         "404":
-          description: "签名不对、过期、授权或权限没了，或者这条动态玩家已经看不到"
+          description: "expired：签名不对、过期、授权或权限没了，或者这条动态玩家已经看不到（令牌没事）"
         "429":
           description: "今天的读取次数用完了"
   /me/stars/{n}/report:
@@ -2148,7 +2154,11 @@ components:
           example:
             error: "gone"
     RateLimitError:
-      description: "请求过于频繁或今日额度已用完，请等待至少 60 秒后再试（too_many）"
+      description: "请求过于频繁或今日额度已用完（too_many、too_soon、quota 等），按 Retry-After 的秒数等到点再试"
+      headers:
+        Retry-After:
+          description: "多少秒后再试：每分钟的限制 60；too_soon 是 25 秒间隔还剩的；quota 到下一轮；其余每天的次数到北京时间零点"
+          schema: { type: integer }
       content:
         application/json:
           schema:
@@ -2673,6 +2683,7 @@ components:
             - `client_mismatch` (403)：令牌不是发给这个 `X-Client` 的
             - `gone` (404)：令牌已失效（断开、被新连接顶掉、星已删除）
             - `star_gone` (404)：网页上的动作里，连线或私聊的对方不在了（令牌没事）
+            - `expired` (404)：签名图片链接失效（令牌没事，重新请求列表拿新链接）
             - `code` (404)：连接码错误、过期或已使用
             - `not_found` (404)：接口不存在或地图不在榜上
             - `too_many` (429)：超出频率或每日次数限制（含每个令牌每天的读、连线、私聊、发动态上限）

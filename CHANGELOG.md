@@ -2,6 +2,14 @@
 
 接口要变的地方先写在这里，旧的写法会留一段时间再停。
 
+## 2026-10-27 · 几处行为修正（1.9.0）
+
+- 所有 `429` 都带 `Retry-After`（秒）：每分钟的限制 60；`too_soon` 是 25 秒间隔还剩的；`quota`（这一轮连满）到下一轮；其余每天的次数到北京时间零点。桌面客户端的页面也能读到（`Access-Control-Expose-Headers`）。原来只有每分钟的限制带，文档说「等一分钟再试」，每天的次数用完时会白试一整天。
+- 签名图片（`/img/…`、`/photo/…`）失效时回 `404 {"error": "expired"}`，原来是 `gone`；`gone` 只表示令牌失效。
+- 表单正文里的是和否按字面算：`on=false` 是取消点亮（原来会点亮），`yes=true` 是同意合照。`true`、`1` 是，`false`、`0` 否。`?mark` 也只认这几种「是」，`?mark=0` 不再标已读。
+- 自助登记的应用（`client_id` 当 `X-Client`）可以用 `POST /connect`，原来回 `403 client_unknown`；权限是 `profile notifications maps`。
+- `POST /disconnect` 要用拿到令牌的那个 `X-Client`，不对回 `403 client_mismatch`。
+
 ## 2026-10-27 · 地图页里写的人（1.8.6）
 
 - `GET me/maps/{world}/page`、`GET me/maps/{world}/intros`，以及回答整张地图页的写接口（添加地图、写介绍）：令牌没有 `mutuals`、或客户端没有通过审核（审核被撤回也算）时，短评、介绍和添加人里别的玩家只给 `{"name": "某位<星位>", "group", "me": false}`，和公开地图页一样，不再给对方的星编号 `n` 和互相连上时的 VRChat 名字。原因：`maps` 是普通权限，而互相连上的人的 VRChat 名字只该给有 `mutuals`（敏感权限）的审核过的客户端。有 `mutuals` 的照旧；自己的短评和介绍照旧。安全修正，没有提前通知期。
