@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.10.0"
+  version: "1.10.1"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -26,7 +26,7 @@ info:
     | `vrchat` | 查看你的 VRChat 名字「{名字}」和 ID（没验证时：查看你的 VRChat 名字和 ID（你还没验证，不会提供）） | `oauth/token`、`oauth/userinfo` 的 `vrc` | | ✓ |
     | `card` | 查看你的星卡（星群、介绍和成分） | `GET /me/card` | | |
     | `maps` | 查看你在地图榜的评分和短评 | `GET /me/maps`、`GET /me/maps/{world}` | ✓ | |
-    | `maps.rate` | 在你操作时，为地图打分 | `POST /me/maps/{world}/rating` | ✓ | ✓ |
+    | `maps.rate` | 在你操作时，为地图打分 | `POST /me/maps/{world}/rating`、`…/rating/delete` | ✓ | ✓ |
     | `notifications` | 接收你的星遇同频提醒 | `GET /me/notifications`、`GET /me/notifications/recent` | ✓ | |
     | `crossings` | 查看你的「星轨相交」 | `GET /me/crossings` | ✓ | ✓ |
     | `mutuals` | 查看与你互相连上的星和他们的 VRChat 名字 | `GET /me/mutuals` | ✓ | ✓ |
@@ -36,7 +36,10 @@ info:
     | `chat` | 查看你的私聊（会看到对方发来的消息） | `GET /me/chats`、`GET /me/chats/{n}` | | ✓ |
     | `chat.send` | 在你操作时，发送私聊消息 | `POST /me/chats/{n}` | | ✓ |
     | `posts` | 查看星友圈（会看到其他玩家的动态） | `GET /me/posts` | | ✓ |
-    | `posts.write` | 在你操作时，发布星友圈动态 | `POST /me/posts` | | ✓ |
+    | `posts.write` | 在你操作时，发布星友圈动态 | `POST /me/posts`、评论、点亮、删除、合照 | | ✓ |
+    | `photos` | 查看其他玩家的照片（互相连上后才是清晰的） | `GET /me/stars/{n}/photo` | | ✓ |
+    | `maps.write` | 在你操作时，写地图介绍、给短评点赞或踩、添加地图 | `POST /me/maps`、`…/intro`、`/me/map-votes` | | ✓ |
+    | `safety` | 在你操作时，举报或隐藏其他玩家和内容 | 举报、隐藏、`GET /me/hidden` | | ✓ |
 
     **敏感权限只给审核过的。** 普通权限（`profile` `card` `maps` `notifications`）都能要；敏感权限：
 
@@ -47,7 +50,7 @@ info:
     - 每次调用都会重新检查：审核被撤回后，敏感接口立即返回 `403 scope_unreviewed`，`/oauth/userinfo` 的 `vrc` 变为 `null`；普通接口照常。
     - 申请审核：「我的资料 → 第三方客户端 → 我登记的应用 → 申请审核」，填写做什么用、源码地址（客户端必须开源）、会怎么用玩家的数据；结果以邮件和站内通知告知；修改已通过的应用会回到未审核。
     - 账号操作（改资料、注销等）不在接口中，以后也不会提供。
-    - 同意页列出所要的每一项，顶上写普通权限与敏感权限各几项；敏感权限（`vrchat` `maps.rate` `crossings` `mutuals` `today` `inbox` `link` `chat` `chat.send` `posts` `posts.write`）排在前面并标「敏感」；超过三项的先收起，可展开。玩家不能逐项取消：请只要用得到的权限。
+    - 同意页列出所要的每一项，顶上写普通权限与敏感权限各几项；敏感权限（`vrchat` `maps.rate` `crossings` `mutuals` `today` `inbox` `link` `chat` `chat.send` `posts` `posts.write` `photos` `maps.write` `safety`）排在前面并标「敏感」；超过三项的先收起，可展开。玩家不能逐项取消：请只要用得到的权限。
 
     ---
 
@@ -131,7 +134,7 @@ tags:
       用于拉取实时提醒、查看星轨相交与互相连上的星友、查看星卡与地图评分、给当前所在的 VRChat 地图打分。
   - name: "网页上的动作"
     description: |
-      今天的星、连向我、连线、私聊、星友圈：与网页执行同一个动作，网页的规则与上限原样适用（只能连今天这一轮等网页允许的星、只能和互相连上的人私聊、发言检查、16–17 岁与 18 岁以上分开等），回答与网页相同。这里列出主要字段，其余字段与网页一致，以后可能增加。
+      今天的星、连向我、连线、私聊、星友圈：与网页执行同一个动作，网页的规则与上限原样适用（只能连今天这一轮等网页允许的星、只能和互相连上的人私聊、发言检查、16–17 岁与 18 岁以上分开等），回答与网页相同。这里列出主要字段：没列出的是网页自己用的，可能变化或去掉，不要依赖。完整示例见仓库的 examples/responses.json。
 
       每个令牌另有每天的上限：本组读接口合计 1000 次、连线 20 次、私聊 100 条、发星友圈 5 条，超出返回 `429 too_many`。
 
@@ -599,6 +602,10 @@ paths:
                     type: integer
                     description: "「星轨相交」中尚未查看的新人数，可用于显示红点"
                     example: 2
+                  latest:
+                    type: integer
+                    description: "我们 VRCX 脚本的最新版本号（给 VRCX 脚本提示更新用，别的客户端用不到）"
+                    example: 4
               examples:
                 withItems:
                   summary: "收到新提醒"
@@ -900,7 +907,124 @@ paths:
         - client: []
           token: []
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  map:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      author:
+                        type: string
+                      cap:
+                        type: integer
+                      img:
+                        type: string
+                      status:
+                        type: string
+                      teen:
+                        deprecated: true
+                        description: 已弃用：网页不显示，2026-12-26 起不再返回
+                      avg:
+                        description: 没有时是 null
+                      raters:
+                        type: integer
+                      adj:
+                        deprecated: true
+                        description: 已弃用：网页不显示，2026-12-26 起不再返回
+                      adder:
+                        type: object
+                        properties:
+                          "n":
+                            type: integer
+                          name:
+                            type: string
+                          group:
+                            type: string
+                          photo:
+                            type: boolean
+                          me:
+                            type: boolean
+                          mutual:
+                            type: boolean
+                      went:
+                        type: integer
+                      spread:
+                        type: array
+                      perf:
+                        description: 没有时是 null
+                      rooms:
+                        type: array
+                  intro:
+                    description: 没有时是 null
+                  intros:
+                    type: integer
+                  sort:
+                    type: string
+                  rates:
+                    type: array
+                  mine:
+                    type: object
+                    properties:
+                      rate:
+                        description: 没有时是 null
+                      intro:
+                        description: 没有时是 null
+                  can:
+                    type: string
+                  max:
+                    type: object
+                    properties:
+                      text:
+                        type: integer
+                      intro:
+                        type: integer
+              example:
+                map:
+                  id: wrld_bbbbbbbb-0000-4000-8000-0000000000b2
+                  name: 雨中车站
+                  author: 某位作者
+                  cap: 16
+                  img: /api/match?xdimg=wrld_bbbbbbbb-0000-4000-8000-0000000000b2
+                  status: ok
+                  teen: true
+                  avg: null
+                  raters: 0
+                  adj: 8.5
+                  adder:
+                    "n": 1
+                    name: 彩蛋猎人
+                    group: G
+                    photo: false
+                    me: true
+                    mutual: false
+                  went: 0
+                  spread:
+                    - 0
+                    - 0
+                    - 0
+                    - 0
+                    - 0
+                  perf: null
+                  rooms: []
+                intro: null
+                intros: 0
+                sort: hot
+                rates: []
+                mine:
+                  rate: null
+                  intro: null
+                can: "yes"
+                max:
+                  text: 30
+                  intro: 200
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
     get:
@@ -1046,16 +1170,14 @@ paths:
             当前不允许打分：
             - `scope`：令牌没有 `maps.rate` 权限（附带 `need`）
             - `client_mismatch`：令牌不是发给这个 `X-Client` 的
-            - `map_not_went`：还不满足打分条件，`need` 字段指出缺少的步骤（`verify` / `friend` / `go`）
-            - `map_elsewhere`：机器人看到玩家此刻在另一张地图上
             - `map_off` / `xd_world_no`：该地图已关闭评分或不对当前玩家开放
+            - （`map_not_went`、`map_elsewhere` 从 2026-10-24 起不再返回：谁都能打分）
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorBody"
               example:
-                error: "map_not_went"
-                need: "go"
+                error: "map_off"
         '429':
           $ref: "#/components/responses/RateLimitError"
         default:
@@ -1086,6 +1208,30 @@ paths:
           description: "expired：签名不对、过期、授权或权限没了，或者这条动态玩家已经看不到（令牌没事）"
         "429":
           description: "今天的读取次数用完了"
+  /photo/{n}:
+    get:
+      tags: ["网页上的动作"]
+      summary: "玩家照片（签名链接）"
+      operationId: getStarPhoto
+      description: |
+        用 `GET /me/stars/{n}/photo` 给的 `url`，不用自己拼，不需要请求头。签名只对拿到它的授权有效，10 分钟后过期。
+        每次打开都重新检查：授权还在、有 `photos` 权限、客户端没被停用、两个人现在还互相连上（自己的总是清晰的）；不满足返回 `404 {"error": "expired"}`（令牌没事）。算一次读取。
+      parameters:
+        - { name: n, in: path, required: true, description: "星的编号", schema: { type: integer } }
+        - { name: client, in: query, required: true, schema: { type: string } }
+        - { name: g, in: query, required: true, description: "授权编号（签名的一部分）", schema: { type: integer } }
+        - { name: exp, in: query, required: true, description: "过期时间（毫秒）", schema: { type: integer } }
+        - { name: sig, in: query, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: "清晰照片"
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+        "404":
+          description: "expired：签名不对、过期、授权或权限没了，或者两人已经不再互相连上（令牌没事）"
+        "429":
+          description: "今天的读取次数用完了"
   /me/stars/{n}/report:
     post:
       tags: ["网页上的动作"]
@@ -1098,7 +1244,17 @@ paths:
       parameters:
         - { name: n, in: path, required: true, schema: { type: integer } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+              example:
+                ok: true
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/stars/{n}/hide:
@@ -1113,7 +1269,44 @@ paths:
       parameters:
         - { name: n, in: path, required: true, schema: { type: integer } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  counts:
+                    type: object
+                    properties:
+                      in:
+                        type: integer
+                      out:
+                        type: integer
+                      mutual:
+                        type: integer
+                      regenToday:
+                        deprecated: true
+                        description: 已弃用：网页不显示，2026-11-26 起不再返回
+                      styles:
+                        deprecated: true
+                        description: 已弃用：网页不显示，2026-11-26 起不再返回
+                      notes:
+                        type: integer
+                      msgs:
+                        type: integer
+              example:
+                ok: true
+                counts:
+                  in: 1
+                  out: 2
+                  mutual: 1
+                  regenToday: 0
+                  styles: []
+                  notes: 0
+                  msgs: 0
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/stars/{n}/unhide:
@@ -1128,7 +1321,44 @@ paths:
       parameters:
         - { name: n, in: path, required: true, schema: { type: integer } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  counts:
+                    type: object
+                    properties:
+                      in:
+                        type: integer
+                      out:
+                        type: integer
+                      mutual:
+                        type: integer
+                      regenToday:
+                        deprecated: true
+                        description: 已弃用：网页不显示，2026-11-26 起不再返回
+                      styles:
+                        deprecated: true
+                        description: 已弃用：网页不显示，2026-11-26 起不再返回
+                      notes:
+                        type: integer
+                      msgs:
+                        type: integer
+              example:
+                ok: true
+                counts:
+                  in: 2
+                  out: 2
+                  mutual: 1
+                  regenToday: 0
+                  styles: []
+                  notes: 0
+                  msgs: 0
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/hidden:
@@ -1141,7 +1371,35 @@ paths:
         - client: []
           token: []
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  blocks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        "n":
+                          type: integer
+                        at:
+                          type: integer
+                        vrc:
+                          type: string
+                        name:
+                          type: string
+                        report:
+                          description: 没有时是 null
+              example:
+                blocks:
+                  - "n": 3
+                    at: 1793034710312
+                    vrc: Player3
+                    name: 彩蛋猎人
+                    report: null
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/stars/{n}/say:
@@ -1156,7 +1414,24 @@ paths:
       parameters:
         - { name: n, in: path, required: true, schema: { type: integer } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  said:
+                    type: object
+                    properties:
+                      text:
+                        type: string
+                      check:
+                        type: string
+              example:
+                said:
+                  text: 你好，很高兴遇见你
+                  check: wait
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/stars/{n}/photo:
@@ -1171,7 +1446,26 @@ paths:
       parameters:
         - { name: n, in: path, required: true, schema: { type: integer } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  level:
+                    type: integer
+                  at:
+                    type: integer
+                  v:
+                    type: string
+                  url:
+                    type: string
+              example:
+                level: 2
+                at: 1793034710075
+                v: "1793034710075:2"
+                url: https://vrcc.cc/api/v1/photo/2?client=probe-full&g=1&exp=1793035310271&sig=02a2b4a4c00b83f5efe498ef3bf58d821d0db7b6cfc5da4fc8d2f20a8e354d08
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/messages/{id}/delete:
@@ -1186,7 +1480,17 @@ paths:
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+              example:
+                ok: true
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/messages/{id}/report:
@@ -1201,7 +1505,17 @@ paths:
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+              example:
+                ok: true
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/posts/{id}/comments:
@@ -1216,7 +1530,121 @@ paths:
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  post:
+                    $ref: "#/components/schemas/Post"
+                  cmts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        cid:
+                          type: integer
+                        text:
+                          type: string
+                        at:
+                          type: integer
+                        who:
+                          $ref: "#/components/schemas/Peer"
+                        check:
+                          type: string
+              example:
+                post:
+                  id: 1
+                  kind: shot
+                  text: 今天的星星很亮
+                  vis: all
+                  at: 1793034710075
+                  mine: false
+                  img:
+                    w: 4
+                    h: 3
+                    grid: null
+                  map: null
+                  lit: 0
+                  litMe: false
+                  cmts: 2
+                  last:
+                    - cid: 1
+                      text: 谢谢
+                      at: 1793034710075
+                      who:
+                        "n": 2
+                        name: 彩蛋猎人
+                        group: G
+                        photo: true
+                        me: false
+                        mutual: true
+                        vrc: Player2
+                    - cid: 2
+                      text: 拍得真好
+                      at: 1793034710274
+                      who:
+                        "n": 1
+                        name: 彩蛋猎人
+                        group: G
+                        photo: false
+                        me: true
+                        mutual: false
+                      check: wait
+                  card:
+                    "n": 2
+                    pos: G1
+                    name: 彩蛋猎人
+                    line: 进了新世界先去找隐藏房间，找到了就招呼同伴来看。
+                    group: G
+                    groupName: 漫游星群
+                    vibe: 随场
+                    lead: 双向
+                    intro: 喜欢在安静的世界里散步。
+                    about: []
+                    common:
+                      - 你们都想找人一起逛新世界
+                      - 你们都常在工作日晚上在线
+                      - 你们都在漫游星群
+                    photo: true
+                    rating: null
+                    star: 102
+                    verified: false
+                    scores:
+                      G: 50
+                      W: 50
+                      Z: 50
+                      L: 50
+                    deco: null
+                    sprout: true
+                    linked: true
+                    mutual: true
+                    vrc: Player2
+                cmts:
+                  - cid: 1
+                    text: 谢谢
+                    at: 1793034710075
+                    who:
+                      "n": 2
+                      name: 彩蛋猎人
+                      group: G
+                      photo: true
+                      me: false
+                      mutual: true
+                      vrc: Player2
+                  - cid: 2
+                    text: 拍得真好
+                    at: 1793034710274
+                    who:
+                      "n": 1
+                      name: 彩蛋猎人
+                      group: G
+                      photo: false
+                      me: true
+                      mutual: false
+                    check: wait
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
     post:
@@ -1230,7 +1658,121 @@ paths:
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  post:
+                    $ref: "#/components/schemas/Post"
+                  cmts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        cid:
+                          type: integer
+                        text:
+                          type: string
+                        at:
+                          type: integer
+                        who:
+                          $ref: "#/components/schemas/Peer"
+                        check:
+                          type: string
+              example:
+                post:
+                  id: 1
+                  kind: shot
+                  text: 今天的星星很亮
+                  vis: all
+                  at: 1793034710075
+                  mine: false
+                  img:
+                    w: 4
+                    h: 3
+                    grid: null
+                  map: null
+                  lit: 0
+                  litMe: false
+                  cmts: 2
+                  last:
+                    - cid: 1
+                      text: 谢谢
+                      at: 1793034710075
+                      who:
+                        "n": 2
+                        name: 彩蛋猎人
+                        group: G
+                        photo: true
+                        me: false
+                        mutual: true
+                        vrc: Player2
+                    - cid: 2
+                      text: 拍得真好
+                      at: 1793034710274
+                      who:
+                        "n": 1
+                        name: 彩蛋猎人
+                        group: G
+                        photo: false
+                        me: true
+                        mutual: false
+                      check: wait
+                  card:
+                    "n": 2
+                    pos: G1
+                    name: 彩蛋猎人
+                    line: 进了新世界先去找隐藏房间，找到了就招呼同伴来看。
+                    group: G
+                    groupName: 漫游星群
+                    vibe: 随场
+                    lead: 双向
+                    intro: 喜欢在安静的世界里散步。
+                    about: []
+                    common:
+                      - 你们都想找人一起逛新世界
+                      - 你们都常在工作日晚上在线
+                      - 你们都在漫游星群
+                    photo: true
+                    rating: null
+                    star: 102
+                    verified: false
+                    scores:
+                      G: 50
+                      W: 50
+                      Z: 50
+                      L: 50
+                    deco: null
+                    sprout: true
+                    linked: true
+                    mutual: true
+                    vrc: Player2
+                cmts:
+                  - cid: 1
+                    text: 谢谢
+                    at: 1793034710075
+                    who:
+                      "n": 2
+                      name: 彩蛋猎人
+                      group: G
+                      photo: true
+                      me: false
+                      mutual: true
+                      vrc: Player2
+                  - cid: 2
+                    text: 拍得真好
+                    at: 1793034710274
+                    who:
+                      "n": 1
+                      name: 彩蛋猎人
+                      group: G
+                      photo: false
+                      me: true
+                      mutual: false
+                    check: wait
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/posts/{id}/light:
@@ -1245,7 +1787,83 @@ paths:
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  post:
+                    $ref: "#/components/schemas/Post"
+              example:
+                post:
+                  id: 1
+                  kind: shot
+                  text: 今天的星星很亮
+                  vis: all
+                  at: 1793034710075
+                  mine: false
+                  img:
+                    w: 4
+                    h: 3
+                    grid: null
+                  map: null
+                  lit: 1
+                  litMe: true
+                  cmts: 2
+                  last:
+                    - cid: 1
+                      text: 谢谢
+                      at: 1793034710075
+                      who:
+                        "n": 2
+                        name: 彩蛋猎人
+                        group: G
+                        photo: true
+                        me: false
+                        mutual: true
+                        vrc: Player2
+                    - cid: 2
+                      text: 拍得真好
+                      at: 1793034710274
+                      who:
+                        "n": 1
+                        name: 彩蛋猎人
+                        group: G
+                        photo: false
+                        me: true
+                        mutual: false
+                      check: wait
+                  card:
+                    "n": 2
+                    pos: G1
+                    name: 彩蛋猎人
+                    line: 进了新世界先去找隐藏房间，找到了就招呼同伴来看。
+                    group: G
+                    groupName: 漫游星群
+                    vibe: 随场
+                    lead: 双向
+                    intro: 喜欢在安静的世界里散步。
+                    about: []
+                    common:
+                      - 你们都想找人一起逛新世界
+                      - 你们都常在工作日晚上在线
+                      - 你们都在漫游星群
+                    photo: true
+                    rating: null
+                    star: 102
+                    verified: false
+                    scores:
+                      G: 50
+                      W: 50
+                      Z: 50
+                      L: 50
+                    deco: null
+                    sprout: true
+                    linked: true
+                    mutual: true
+                    vrc: Player2
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/posts/{id}/delete:
@@ -1260,7 +1878,17 @@ paths:
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+              example:
+                ok: true
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/posts/{id}/with:
@@ -1275,7 +1903,20 @@ paths:
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  post:
+                    description: 没有时是 null
+              example:
+                ok: true
+                post: null
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/posts/{id}/report:
@@ -1290,7 +1931,17 @@ paths:
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+              example:
+                ok: true
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/comments/{cid}/delete:
@@ -1305,7 +1956,20 @@ paths:
       parameters:
         - { name: cid, in: path, required: true, schema: { type: integer } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  post:
+                    description: 没有时是 null
+                  cmts:
+                    type: array
+              example:
+                post: null
+                cmts: []
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/comments/{cid}/report:
@@ -1320,7 +1984,17 @@ paths:
       parameters:
         - { name: cid, in: path, required: true, schema: { type: integer } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+              example:
+                ok: true
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/board:
@@ -1333,7 +2007,121 @@ paths:
         - client: []
           token: []
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sort:
+                    type: string
+                  min:
+                    type: integer
+                  dot:
+                    type: object
+                    properties:
+                      maps:
+                        type: boolean
+                      went:
+                        type: boolean
+                  maps:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        author:
+                          type: string
+                        cap:
+                          type: integer
+                        img:
+                          type: string
+                        status:
+                          type: string
+                        teen:
+                          deprecated: true
+                          description: 已弃用：网页不显示，2026-12-26 起不再返回
+                        avg:
+                          type: number
+                        raters:
+                          type: integer
+                        adj:
+                          deprecated: true
+                          description: 已弃用：网页不显示，2026-12-26 起不再返回
+                        went:
+                          type: integer
+                        hot:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            text:
+                              type: string
+                            up:
+                              type: integer
+                            vote:
+                              type: integer
+                            mine:
+                              type: boolean
+                        hots:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              text:
+                                type: string
+                              up:
+                                type: integer
+                              vote:
+                                type: integer
+                              mine:
+                                type: boolean
+                        weight:
+                          description: 没有时是 null
+                        room:
+                          type: boolean
+              example:
+                sort: top
+                min: 1
+                dot:
+                  maps: false
+                  went: false
+                maps:
+                  - id: wrld_aaaaaaaa-0000-4000-8000-0000000000a1
+                    name: 星夜茶屋
+                    author: 某位作者
+                    cap: 16
+                    img: /api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1
+                    status: ok
+                    teen: true
+                    avg: 8.5
+                    raters: 2
+                    adj: 8.5
+                    went: 0
+                    hot:
+                      id: 1
+                      text: 光影很舒服
+                      up: 0
+                      vote: 0
+                      mine: true
+                    hots:
+                      - id: 1
+                        text: 光影很舒服
+                        up: 0
+                        vote: 0
+                        mine: true
+                      - id: 2
+                        text: 适合拍照
+                        up: 0
+                        vote: 0
+                    weight: null
+                    room: false
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/maps/{world}/page:
@@ -1350,7 +2138,242 @@ paths:
       parameters:
         - { name: world, in: path, required: true, schema: { type: string } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  map:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      author:
+                        type: string
+                      cap:
+                        type: integer
+                      img:
+                        type: string
+                      status:
+                        type: string
+                      teen:
+                        deprecated: true
+                        description: 已弃用：网页不显示，2026-12-26 起不再返回
+                      avg:
+                        type: number
+                      raters:
+                        type: integer
+                      adj:
+                        deprecated: true
+                        description: 已弃用：网页不显示，2026-12-26 起不再返回
+                      adder:
+                        type: object
+                        properties:
+                          "n":
+                            type: integer
+                          name:
+                            type: string
+                          group:
+                            type: string
+                          photo:
+                            type: boolean
+                          me:
+                            type: boolean
+                          mutual:
+                            type: boolean
+                          vrc:
+                            type: string
+                      went:
+                        type: integer
+                      spread:
+                        type: array
+                      perf:
+                        description: 没有时是 null
+                      rooms:
+                        type: array
+                  intro:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      text:
+                        type: string
+                      up:
+                        type: integer
+                      down:
+                        type: integer
+                      at:
+                        type: integer
+                      who:
+                        $ref: "#/components/schemas/Peer"
+                      mine:
+                        type: boolean
+                      vote:
+                        type: integer
+                      folded:
+                        type: boolean
+                  intros:
+                    type: integer
+                  sort:
+                    type: string
+                  rates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        text:
+                          type: string
+                        score:
+                          type: integer
+                        up:
+                          type: integer
+                        down:
+                          type: integer
+                        at:
+                          type: integer
+                        who:
+                          $ref: "#/components/schemas/Peer"
+                        mine:
+                          type: boolean
+                        vote:
+                          type: integer
+                        folded:
+                          type: boolean
+                  mine:
+                    type: object
+                    properties:
+                      rate:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          text:
+                            type: string
+                          score:
+                            type: integer
+                          up:
+                            type: integer
+                          down:
+                            type: integer
+                          at:
+                            type: integer
+                          who:
+                            $ref: "#/components/schemas/Peer"
+                          mine:
+                            type: boolean
+                          vote:
+                            type: integer
+                          folded:
+                            type: boolean
+                          check:
+                            type: string
+                      intro:
+                        description: 没有时是 null
+                  can:
+                    type: string
+                  max:
+                    type: object
+                    properties:
+                      text:
+                        type: integer
+                      intro:
+                        type: integer
+              example:
+                map:
+                  id: wrld_aaaaaaaa-0000-4000-8000-0000000000a1
+                  name: 星夜茶屋
+                  author: 某位作者
+                  cap: 16
+                  img: /api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1
+                  status: ok
+                  teen: true
+                  avg: 8.5
+                  raters: 2
+                  adj: 8.5
+                  adder:
+                    "n": 2
+                    name: 彩蛋猎人
+                    group: G
+                    photo: true
+                    me: false
+                    mutual: true
+                    vrc: Player2
+                  went: 0
+                  spread:
+                    - 1
+                    - 1
+                    - 0
+                    - 0
+                    - 0
+                  perf: null
+                  rooms: []
+                intro:
+                  id: 1
+                  text: 夜里人少，适合安静地坐一会儿。
+                  up: 0
+                  down: 0
+                  at: 1793034710075
+                  who:
+                    "n": 2
+                    name: 彩蛋猎人
+                    group: G
+                    photo: true
+                    me: false
+                    mutual: true
+                    vrc: Player2
+                  mine: false
+                  vote: 0
+                  folded: false
+                intros: 1
+                sort: hot
+                rates:
+                  - id: 2
+                    text: 适合拍照
+                    score: 8
+                    up: 0
+                    down: 0
+                    at: 1793034710075
+                    who:
+                      "n": 2
+                      name: 彩蛋猎人
+                      group: G
+                      photo: true
+                      me: false
+                      mutual: true
+                      vrc: Player2
+                    mine: false
+                    vote: 0
+                    folded: false
+                mine:
+                  rate:
+                    id: 1
+                    text: 光影很舒服
+                    score: 9
+                    up: 0
+                    down: 0
+                    at: 1793034710225
+                    who:
+                      "n": 1
+                      name: 彩蛋猎人
+                      group: G
+                      photo: false
+                      me: true
+                      mutual: false
+                    mine: true
+                    vote: 0
+                    folded: false
+                    check: ok
+                  intro: null
+                can: "yes"
+                max:
+                  text: 30
+                  intro: 200
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/maps/{world}/intros:
@@ -1367,7 +2390,54 @@ paths:
       parameters:
         - { name: world, in: path, required: true, schema: { type: string } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  intros:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        text:
+                          type: string
+                        up:
+                          type: integer
+                        down:
+                          type: integer
+                        at:
+                          type: integer
+                        who:
+                          $ref: "#/components/schemas/Peer"
+                        mine:
+                          type: boolean
+                        vote:
+                          type: integer
+                        folded:
+                          type: boolean
+              example:
+                intros:
+                  - id: 1
+                    text: 夜里人少，适合安静地坐一会儿。
+                    up: 0
+                    down: 0
+                    at: 1793034710075
+                    who:
+                      "n": 2
+                      name: 彩蛋猎人
+                      group: G
+                      photo: true
+                      me: false
+                      mutual: true
+                      vrc: Player2
+                    mine: false
+                    vote: 0
+                    folded: false
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/maps/{world}/intro:
@@ -1382,7 +2452,279 @@ paths:
       parameters:
         - { name: world, in: path, required: true, schema: { type: string } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  map:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      author:
+                        type: string
+                      cap:
+                        type: integer
+                      img:
+                        type: string
+                      status:
+                        type: string
+                      teen:
+                        deprecated: true
+                        description: 已弃用：网页不显示，2026-12-26 起不再返回
+                      avg:
+                        type: number
+                      raters:
+                        type: integer
+                      adj:
+                        deprecated: true
+                        description: 已弃用：网页不显示，2026-12-26 起不再返回
+                      adder:
+                        type: object
+                        properties:
+                          "n":
+                            type: integer
+                          name:
+                            type: string
+                          group:
+                            type: string
+                          photo:
+                            type: boolean
+                          me:
+                            type: boolean
+                          mutual:
+                            type: boolean
+                          vrc:
+                            type: string
+                      went:
+                        type: integer
+                      spread:
+                        type: array
+                      perf:
+                        description: 没有时是 null
+                      rooms:
+                        type: array
+                  intro:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      text:
+                        type: string
+                      up:
+                        type: integer
+                      down:
+                        type: integer
+                      at:
+                        type: integer
+                      who:
+                        $ref: "#/components/schemas/Peer"
+                      mine:
+                        type: boolean
+                      vote:
+                        type: integer
+                      folded:
+                        type: boolean
+                  intros:
+                    type: integer
+                  sort:
+                    type: string
+                  rates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        text:
+                          type: string
+                        score:
+                          type: integer
+                        up:
+                          type: integer
+                        down:
+                          type: integer
+                        at:
+                          type: integer
+                        who:
+                          $ref: "#/components/schemas/Peer"
+                        mine:
+                          type: boolean
+                        vote:
+                          type: integer
+                        folded:
+                          type: boolean
+                  mine:
+                    type: object
+                    properties:
+                      rate:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          text:
+                            type: string
+                          score:
+                            type: integer
+                          up:
+                            type: integer
+                          down:
+                            type: integer
+                          at:
+                            type: integer
+                          who:
+                            $ref: "#/components/schemas/Peer"
+                          mine:
+                            type: boolean
+                          vote:
+                            type: integer
+                          folded:
+                            type: boolean
+                          check:
+                            type: string
+                      intro:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          text:
+                            type: string
+                          up:
+                            type: integer
+                          down:
+                            type: integer
+                          at:
+                            type: integer
+                          who:
+                            $ref: "#/components/schemas/Peer"
+                          mine:
+                            type: boolean
+                          vote:
+                            type: integer
+                          folded:
+                            type: boolean
+                          check:
+                            type: string
+                  can:
+                    type: string
+                  max:
+                    type: object
+                    properties:
+                      text:
+                        type: integer
+                      intro:
+                        type: integer
+              example:
+                map:
+                  id: wrld_aaaaaaaa-0000-4000-8000-0000000000a1
+                  name: 星夜茶屋
+                  author: 某位作者
+                  cap: 16
+                  img: /api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1
+                  status: ok
+                  teen: true
+                  avg: 8.5
+                  raters: 2
+                  adj: 8.5
+                  adder:
+                    "n": 2
+                    name: 彩蛋猎人
+                    group: G
+                    photo: true
+                    me: false
+                    mutual: true
+                    vrc: Player2
+                  went: 0
+                  spread:
+                    - 1
+                    - 1
+                    - 0
+                    - 0
+                    - 0
+                  perf: null
+                  rooms: []
+                intro:
+                  id: 1
+                  text: 夜里人少，适合安静地坐一会儿。
+                  up: 0
+                  down: 0
+                  at: 1793034710075
+                  who:
+                    "n": 2
+                    name: 彩蛋猎人
+                    group: G
+                    photo: true
+                    me: false
+                    mutual: true
+                    vrc: Player2
+                  mine: false
+                  vote: 0
+                  folded: false
+                intros: 1
+                sort: hot
+                rates:
+                  - id: 2
+                    text: 适合拍照
+                    score: 8
+                    up: 1
+                    down: 0
+                    at: 1793034710075
+                    who:
+                      "n": 2
+                      name: 彩蛋猎人
+                      group: G
+                      photo: true
+                      me: false
+                      mutual: true
+                      vrc: Player2
+                    mine: false
+                    vote: 1
+                    folded: false
+                mine:
+                  rate:
+                    id: 1
+                    text: 光影很舒服
+                    score: 9
+                    up: 0
+                    down: 0
+                    at: 1793034710225
+                    who:
+                      "n": 1
+                      name: 彩蛋猎人
+                      group: G
+                      photo: false
+                      me: true
+                      mutual: false
+                    mine: true
+                    vote: 0
+                    folded: false
+                    check: ok
+                  intro:
+                    id: 2
+                    text: 雨天来的时候灯光最好看。
+                    up: 0
+                    down: 0
+                    at: 1793034710353
+                    who:
+                      "n": 1
+                      name: 彩蛋猎人
+                      group: G
+                      photo: false
+                      me: true
+                      mutual: false
+                    mine: true
+                    vote: 0
+                    folded: false
+                    check: wait
+                can: "yes"
+                max:
+                  text: 30
+                  intro: 200
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/maps/{world}/intro/delete:
@@ -1397,7 +2739,242 @@ paths:
       parameters:
         - { name: world, in: path, required: true, schema: { type: string } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  map:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      author:
+                        type: string
+                      cap:
+                        type: integer
+                      img:
+                        type: string
+                      status:
+                        type: string
+                      teen:
+                        deprecated: true
+                        description: 已弃用：网页不显示，2026-12-26 起不再返回
+                      avg:
+                        type: number
+                      raters:
+                        type: integer
+                      adj:
+                        deprecated: true
+                        description: 已弃用：网页不显示，2026-12-26 起不再返回
+                      adder:
+                        type: object
+                        properties:
+                          "n":
+                            type: integer
+                          name:
+                            type: string
+                          group:
+                            type: string
+                          photo:
+                            type: boolean
+                          me:
+                            type: boolean
+                          mutual:
+                            type: boolean
+                          vrc:
+                            type: string
+                      went:
+                        type: integer
+                      spread:
+                        type: array
+                      perf:
+                        description: 没有时是 null
+                      rooms:
+                        type: array
+                  intro:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      text:
+                        type: string
+                      up:
+                        type: integer
+                      down:
+                        type: integer
+                      at:
+                        type: integer
+                      who:
+                        $ref: "#/components/schemas/Peer"
+                      mine:
+                        type: boolean
+                      vote:
+                        type: integer
+                      folded:
+                        type: boolean
+                  intros:
+                    type: integer
+                  sort:
+                    type: string
+                  rates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        text:
+                          type: string
+                        score:
+                          type: integer
+                        up:
+                          type: integer
+                        down:
+                          type: integer
+                        at:
+                          type: integer
+                        who:
+                          $ref: "#/components/schemas/Peer"
+                        mine:
+                          type: boolean
+                        vote:
+                          type: integer
+                        folded:
+                          type: boolean
+                  mine:
+                    type: object
+                    properties:
+                      rate:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          text:
+                            type: string
+                          score:
+                            type: integer
+                          up:
+                            type: integer
+                          down:
+                            type: integer
+                          at:
+                            type: integer
+                          who:
+                            $ref: "#/components/schemas/Peer"
+                          mine:
+                            type: boolean
+                          vote:
+                            type: integer
+                          folded:
+                            type: boolean
+                          check:
+                            type: string
+                      intro:
+                        description: 没有时是 null
+                  can:
+                    type: string
+                  max:
+                    type: object
+                    properties:
+                      text:
+                        type: integer
+                      intro:
+                        type: integer
+              example:
+                map:
+                  id: wrld_aaaaaaaa-0000-4000-8000-0000000000a1
+                  name: 星夜茶屋
+                  author: 某位作者
+                  cap: 16
+                  img: /api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1
+                  status: ok
+                  teen: true
+                  avg: 8.5
+                  raters: 2
+                  adj: 8.5
+                  adder:
+                    "n": 2
+                    name: 彩蛋猎人
+                    group: G
+                    photo: true
+                    me: false
+                    mutual: true
+                    vrc: Player2
+                  went: 0
+                  spread:
+                    - 1
+                    - 1
+                    - 0
+                    - 0
+                    - 0
+                  perf: null
+                  rooms: []
+                intro:
+                  id: 1
+                  text: 夜里人少，适合安静地坐一会儿。
+                  up: 0
+                  down: 0
+                  at: 1793034710075
+                  who:
+                    "n": 2
+                    name: 彩蛋猎人
+                    group: G
+                    photo: true
+                    me: false
+                    mutual: true
+                    vrc: Player2
+                  mine: false
+                  vote: 0
+                  folded: false
+                intros: 1
+                sort: hot
+                rates:
+                  - id: 2
+                    text: 适合拍照
+                    score: 8
+                    up: 1
+                    down: 0
+                    at: 1793034710075
+                    who:
+                      "n": 2
+                      name: 彩蛋猎人
+                      group: G
+                      photo: true
+                      me: false
+                      mutual: true
+                      vrc: Player2
+                    mine: false
+                    vote: 1
+                    folded: false
+                mine:
+                  rate:
+                    id: 1
+                    text: 光影很舒服
+                    score: 9
+                    up: 0
+                    down: 0
+                    at: 1793034710225
+                    who:
+                      "n": 1
+                      name: 彩蛋猎人
+                      group: G
+                      photo: false
+                      me: true
+                      mutual: false
+                    mine: true
+                    vote: 0
+                    folded: false
+                    check: ok
+                  intro: null
+                can: "yes"
+                max:
+                  text: 30
+                  intro: 200
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/maps/{world}/rating/delete:
@@ -1412,7 +2989,162 @@ paths:
       parameters:
         - { name: world, in: path, required: true, schema: { type: string } }
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  map:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      author:
+                        type: string
+                      cap:
+                        type: integer
+                      img:
+                        type: string
+                      status:
+                        type: string
+                      teen:
+                        deprecated: true
+                        description: 已弃用：网页不显示，2026-12-26 起不再返回
+                      avg:
+                        type: integer
+                      raters:
+                        type: integer
+                      adj:
+                        deprecated: true
+                        description: 已弃用：网页不显示，2026-12-26 起不再返回
+                      adder:
+                        type: object
+                        properties:
+                          "n":
+                            type: integer
+                          name:
+                            type: string
+                          group:
+                            type: string
+                          photo:
+                            type: boolean
+                          me:
+                            type: boolean
+                          mutual:
+                            type: boolean
+                          vrc:
+                            type: string
+                      went:
+                        type: integer
+                      spread:
+                        type: array
+                      perf:
+                        description: 没有时是 null
+                      rooms:
+                        type: array
+                  intro:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      text:
+                        type: string
+                      up:
+                        type: integer
+                      down:
+                        type: integer
+                      at:
+                        type: integer
+                      who:
+                        $ref: "#/components/schemas/Peer"
+                      mine:
+                        type: boolean
+                      vote:
+                        type: integer
+                      folded:
+                        type: boolean
+                  intros:
+                    type: integer
+                  sort:
+                    type: string
+                  rates:
+                    type: array
+                  mine:
+                    type: object
+                    properties:
+                      rate:
+                        description: 没有时是 null
+                      intro:
+                        description: 没有时是 null
+                  can:
+                    type: string
+                  max:
+                    type: object
+                    properties:
+                      text:
+                        type: integer
+                      intro:
+                        type: integer
+              example:
+                map:
+                  id: wrld_aaaaaaaa-0000-4000-8000-0000000000a1
+                  name: 星夜茶屋
+                  author: 某位作者
+                  cap: 16
+                  img: /api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1
+                  status: ok
+                  teen: true
+                  avg: 8
+                  raters: 1
+                  adj: 8
+                  adder:
+                    "n": 2
+                    name: 彩蛋猎人
+                    group: G
+                    photo: true
+                    me: false
+                    mutual: true
+                    vrc: Player2
+                  went: 0
+                  spread:
+                    - 0
+                    - 1
+                    - 0
+                    - 0
+                    - 0
+                  perf: null
+                  rooms: []
+                intro:
+                  id: 1
+                  text: 夜里人少，适合安静地坐一会儿。
+                  up: 0
+                  down: 0
+                  at: 1793034710075
+                  who:
+                    "n": 2
+                    name: 彩蛋猎人
+                    group: G
+                    photo: true
+                    me: false
+                    mutual: true
+                    vrc: Player2
+                  mine: false
+                  vote: 0
+                  folded: false
+                intros: 1
+                sort: hot
+                rates: []
+                mine:
+                  rate: null
+                  intro: null
+                can: "yes"
+                max:
+                  text: 30
+                  intro: 200
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/map-votes:
@@ -1425,7 +3157,29 @@ paths:
         - client: []
           token: []
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  kind:
+                    type: string
+                  id:
+                    type: integer
+                  up:
+                    type: integer
+                  down:
+                    type: integer
+                  mine:
+                    type: integer
+              example:
+                kind: rate
+                id: 2
+                up: 1
+                down: 0
+                mine: 1
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/map-reports:
@@ -1438,7 +3192,17 @@ paths:
         - client: []
           token: []
       responses:
-        "200": { description: "和网页同一个动作的回答" }
+        "200":
+          description: 和网页同一个动作的回答（只保证这里列出的字段；没列出的可能变化或去掉）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+              example:
+                ok: true
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /stickers:
@@ -1580,10 +3344,10 @@ paths:
       parameters:
         - name: mark
           in: query
-          description: "传 1 表示玩家现在看过了（记在账号上）"
+          description: "传 1（或 true）表示玩家现在看过了（记在账号上）；0、false 或不传不标"
           schema:
             type: string
-            enum: ["1"]
+            enum: ["1", "true"]
       responses:
         '200':
           description: "连向玩家的星"
@@ -1602,13 +3366,16 @@ paths:
                   counts:
                     type: object
                     additionalProperties: true
-                    description: "连向我（in）、我连向（out）、互相连上（mutual）等数字"
+                    description: "连向我（in）、我连向（out）、互相连上（mutual）、未读通知（notes）、未读私聊（msgs）。regenToday、styles 已弃用（网页不显示），2026-11-26 起不再返回"
                   seen:
                     type: integer
                     description: "上次看过的最新时间（毫秒），at 比它新的是新的"
                   cross:
-                    type: integer
-                    description: "星轨相交未读数"
+                    type: object
+                    description: "星轨相交：一共几颗（n）、还没看过的几颗（fresh）"
+                    properties:
+                      "n": { type: integer, example: 3 }
+                      fresh: { type: integer, example: 1 }
         '401':
           $ref: "#/components/responses/AuthError"
         '403':
@@ -2094,7 +3861,10 @@ components:
             chat: "查看你的私聊（会看到对方发来的消息）：GET /me/chats、GET /me/chats/{n}"
             chat.send: "在你操作时，发送私聊消息：POST /me/chats/{n}"
             posts: "查看星友圈（会看到其他玩家的动态）：GET /me/posts"
-            posts.write: "在你操作时，发布星友圈动态：POST /me/posts"
+            posts.write: "在你操作时，发布星友圈动态：POST /me/posts、评论、点亮、删除、合照"
+            photos: "查看其他玩家的照片（互相连上后才是清晰的）：GET /me/stars/{n}/photo"
+            maps.write: "在你操作时，写地图介绍、给短评点赞或踩、添加地图：POST /me/maps、/me/maps/{world}/intro、/me/map-votes"
+            safety: "在你操作时，举报或隐藏其他玩家和内容：举报、隐藏、GET /me/hidden"
 
   responses:
     ClientError:
@@ -2218,8 +3988,8 @@ components:
       type: string
       description: |
         空格分隔的权限（请求时也接受逗号或 `+`），返回时按固定顺序、`profile` 在最前：
-        `profile` `vrchat` `card` `maps` `maps.rate` `notifications` `crossings` `mutuals` `today` `inbox` `link` `chat` `chat.send` `posts` `posts.write`。
-        敏感权限（`vrchat` `maps.rate` `crossings` `mutuals` `today` `inbox` `link` `chat` `chat.send` `posts` `posts.write`）只给开 Issue 登记的客户端与审核通过的应用（未审核的应用只有登记人能同意）；`dev-` 只能要普通权限。省略时：登记客户端为 `profile notifications crossings mutuals maps maps.rate`，`dev-` 为 `profile notifications maps`，自助登记的应用只有 `profile`。
+        `profile` `vrchat` `card` `maps` `maps.rate` `notifications` `crossings` `mutuals` `today` `inbox` `link` `chat` `chat.send` `posts` `posts.write` `photos` `maps.write` `safety`。
+        敏感权限（`vrchat` `maps.rate` `crossings` `mutuals` `today` `inbox` `link` `chat` `chat.send` `posts` `posts.write` `photos` `maps.write` `safety`）只给开 Issue 登记的客户端与审核通过的应用（未审核的应用只有登记人能同意）；`dev-` 只能要普通权限。省略时：登记客户端为 `profile notifications crossings mutuals maps maps.rate`，`dev-` 为 `profile notifications maps`，自助登记的应用只有 `profile`。
       example: "profile notifications maps maps.rate"
 
     Card:
@@ -2251,7 +4021,8 @@ components:
         vibe:
           type: string
           enum: ["安静", "随场", "热闹"]
-          description: "氛围"
+          deprecated: true
+          description: "氛围。已弃用：网页的星卡上不显示，2026-12-26 起不再返回"
           example: "安静"
         scores:
           type: object
@@ -2274,6 +4045,12 @@ components:
           type: [string, "null"]
           description: "星卡介绍；还在生成中时为 null"
           example: "平时喜欢在安静的世界拍照、听音乐。"
+        verified:
+          type: boolean
+          description: "有没有验证过 VRChat 账号（只要普通权限；账号本身要 vrchat）"
+          example: true
+        deco:
+          $ref: "#/components/schemas/Deco"
 
     MyRating:
       type: object
@@ -2330,6 +4107,8 @@ components:
           example: "漫游星群"
         vibe:
           type: string
+          deprecated: true
+          description: "氛围。已弃用：网页的星卡上不显示，2026-12-26 起不再返回"
           example: "安静"
         intro:
           type: string
@@ -2610,6 +4389,16 @@ components:
           type: [string, "null"]
           description: "地图封面图网址"
           example: "https://vrcc.cc/maps/wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd.jpg"
+        hot:
+          description: "热评：这张图最热的一条短评，署名「某位<星位>」，没有时为 null"
+          oneOf:
+            - type: object
+              properties:
+                text: { type: string, example: "光影很舒服" }
+                by: { type: string, example: "某位彩蛋猎人" }
+                up: { type: integer, description: "赞的数量", example: 3 }
+                went: { type: boolean, description: "写的人去过这张图" }
+            - type: "null"
 
     MyMap:
       type: object
@@ -2647,10 +4436,14 @@ components:
           example: 9
         can:
           type: boolean
-          description: "我现在是否可以给这张地图打分"
+          deprecated: true
+          description: "已弃用：2026-10-24 起谁都能打分，恒为 true。2026-12-26 起不再返回"
           example: true
         need:
-          $ref: "#/components/schemas/Need"
+          deprecated: true
+          description: "已弃用：恒为 null。2026-12-26 起不再返回"
+          allOf:
+            - $ref: "#/components/schemas/Need"
         words:
           type: [string, "null"]
           description: "我写的短评（未写时为 null）"
@@ -2692,8 +4485,20 @@ components:
             - `msg_words` (400，附 `why`) / `msg_empty` (400)：私聊文字没过检查或为空
             - `too_soon` (429)：提醒轮询间隔不足 25 秒（附带 `every`）
             - `busy` (429)：全站今日错误连接码过多，连接功能暂停至次日
-            - `map_not_went` (403)：尚不满足打分条件（附带 `need`）
-            - `map_elsewhere` (403)：机器人看到玩家当前在另一张地图
+            - `map_gone` (404)：那条短评或介绍不在了
+            - `map_wait` (409)：地图还在审核
+            - `yq_off` (404)：星友圈（含地图榜）整体关着
+            - `yq_gone` (404)：那条动态或评论不在了
+            - `yq_wait` / `yq_paused` (409)：玩家自己的星还在审核 / 被下架时不能发言、打分
+            - `msg_wait` / `msg_paused` (409)：同上，私聊和说一句
+            - `say_mutual` / `said` (409)：说一句：已经互相连上（去私聊）/ 已经说过
+            - `xd_world` (400 / 404)：地图 ID 格式不对 / VRChat 上没有这张图
+            - `xd_search` (502)：去 VRChat 查地图失败，稍后再试
+            - `busy` (409)：星卡还在生成（今天的星）
+            - `method` (405)：用了 GET、POST 以外的方法
+            - `server` / `server_error` (500)：服务器出错
+            - `stop` (503)：停站维护中，附带 `say`（说明）和 `until`（预计恢复，毫秒），只出现在网页上的动作；令牌没事
+            - （`map_not_went`、`map_elsewhere` 从 2026-10-24 起不再返回）
             - `map_off` / `xd_world_no` (403)：该地图不允许打分或不对该玩家开放
             - `yq_words` (400)：短评未通过关键词检查（附带 `why`）
             - `yq_empty` (400)：短评仅含符号或空白
@@ -2710,7 +4515,7 @@ components:
           description: "too_soon 时返回，建议多少秒后再试"
         need:
           type: string
-          description: "map_not_went 时为缺少的打分条件（verify / friend / go，见 Need）；scope 时为缺少的权限"
+          description: "scope、scope_unreviewed 时为缺少的权限"
           example: "go"
         why:
           type: string

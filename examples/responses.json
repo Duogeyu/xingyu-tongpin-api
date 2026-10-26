@@ -1,0 +1,1872 @@
+{
+  "POST /api/v1/device/code": {
+    "status": 200,
+    "body": {
+      "device_code": "3926676f330ff9eaf57e2de8ea549703c5e380e2c36c50ad",
+      "user_code": "EBMV-G564",
+      "verification_uri": "https://vrcc.cc/match/?connect",
+      "verification_uri_complete": "https://vrcc.cc/match/?connect=EBMVG564",
+      "expires_in": 600,
+      "interval": 5,
+      "scope": "profile vrchat card maps maps.rate notifications crossings mutuals today inbox link chat chat.send posts posts.write photos maps.write safety"
+    }
+  },
+  "POST /api/v1/device/token (pending)": {
+    "status": 400,
+    "body": {
+      "error": "authorization_pending"
+    }
+  },
+  "POST /api/v1/device/token": {
+    "status": 200,
+    "body": {
+      "access_token": "71789ff8f2819792b669e1bc6ddbd526dd2192e0c641f7cf",
+      "token_type": "Bearer",
+      "scope": "profile vrchat card maps maps.rate notifications crossings mutuals today inbox link chat chat.send posts posts.write photos maps.write safety",
+      "me": {
+        "star": 101,
+        "vrc": "Player1"
+      }
+    }
+  },
+  "GET /api/v1/boards/maps": {
+    "status": 200,
+    "body": {
+      "board": "maps",
+      "min": 1,
+      "maps": [
+        {
+          "world": "wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+          "name": "星夜茶屋",
+          "author": "某位作者",
+          "hot": {
+            "text": "光影很舒服",
+            "by": "某位彩蛋猎人",
+            "up": 0,
+            "went": false
+          },
+          "avg": 8.5,
+          "raters": 2,
+          "rank": 1,
+          "weight": null,
+          "page": "https://vrcc.cc/maps/wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+          "img": "https://vrcc.cc/maps/wrld_aaaaaaaa-0000-4000-8000-0000000000a1.jpg"
+        }
+      ],
+      "at": 1793034710192
+    }
+  },
+  "GET /api/v1/maps": {
+    "status": 200,
+    "body": {
+      "maps": [
+        {
+          "world": "wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+          "name": "星夜茶屋",
+          "author": "某位作者",
+          "hot": {
+            "text": "光影很舒服",
+            "by": "某位彩蛋猎人",
+            "up": 0,
+            "went": false
+          },
+          "avg": 8.5,
+          "raters": 2,
+          "rank": 1,
+          "weight": null,
+          "page": "https://vrcc.cc/maps/wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+          "img": "https://vrcc.cc/maps/wrld_aaaaaaaa-0000-4000-8000-0000000000a1.jpg"
+        }
+      ],
+      "at": 1793034710195
+    }
+  },
+  "GET /api/v1/maps/{world}": {
+    "status": 200,
+    "body": {
+      "map": {
+        "world": "wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+        "name": "星夜茶屋",
+        "author": "某位作者",
+        "hot": {
+          "text": "光影很舒服",
+          "by": "某位彩蛋猎人",
+          "up": 0,
+          "went": false
+        },
+        "avg": 8.5,
+        "raters": 2,
+        "rank": 1,
+        "weight": null,
+        "page": "https://vrcc.cc/maps/wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+        "img": "https://vrcc.cc/maps/wrld_aaaaaaaa-0000-4000-8000-0000000000a1.jpg"
+      },
+      "at": 1793034710197
+    }
+  },
+  "GET /api/v1/stickers": {
+    "status": 200,
+    "body": {
+      "stickers": {
+        "compass": {
+          "name": "指南针",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/compass"
+        },
+        "map": {
+          "name": "地图",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/map"
+        },
+        "gamepad": {
+          "name": "手柄",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/gamepad"
+        },
+        "dice": {
+          "name": "骰子",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/dice"
+        },
+        "brush": {
+          "name": "画笔",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/brush"
+        },
+        "camera": {
+          "name": "相机",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/camera"
+        },
+        "bubble": {
+          "name": "对话",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/bubble"
+        },
+        "mic": {
+          "name": "麦克风",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/mic"
+        },
+        "cat": {
+          "name": "猫猫头",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/cat"
+        },
+        "paw": {
+          "name": "爪印",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/paw"
+        },
+        "vr": {
+          "name": "VR 头显",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/vr"
+        },
+        "star": {
+          "name": "星星",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/star"
+        },
+        "moon": {
+          "name": "月亮",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/moon"
+        },
+        "planet": {
+          "name": "行星",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/planet"
+        },
+        "note": {
+          "name": "音符",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/note"
+        },
+        "cloud": {
+          "name": "云朵",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/cloud"
+        },
+        "rocket": {
+          "name": "火箭",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/rocket"
+        },
+        "mushroom": {
+          "name": "蘑菇",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/mushroom"
+        },
+        "ghost": {
+          "name": "小幽灵",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/ghost"
+        },
+        "boba": {
+          "name": "奶茶",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/boba"
+        },
+        "lantern": {
+          "name": "初来乍到",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/lantern"
+        },
+        "medal": {
+          "name": "常驻星民",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/medal"
+        },
+        "tune": {
+          "name": "同频",
+          "finishes": [
+            "paper",
+            "glitter",
+            "holo",
+            "gold",
+            "embroid",
+            "clear"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/tune"
+        },
+        "peek": {
+          "name": "QUASO",
+          "finishes": [
+            "paper"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/peek"
+        },
+        "bowl": {
+          "name": "舔空碗",
+          "finishes": [
+            "paper"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/bowl"
+        },
+        "coin": {
+          "name": "偷子",
+          "finishes": [
+            "paper"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/coin"
+        },
+        "sprout": {
+          "name": "新芽",
+          "finishes": [
+            "paper"
+          ],
+          "url": "https://vrcc.cc/api/v1/stickers/sprout"
+        }
+      },
+      "finishes": {
+        "paper": "纸质",
+        "glitter": "闪粉",
+        "holo": "镭射",
+        "gold": "烫金",
+        "embroid": "刺绣",
+        "clear": "透明"
+      }
+    }
+  },
+  "GET /api/v1/status": {
+    "status": 200,
+    "body": {
+      "at": 1793034710199,
+      "state": "ok"
+    }
+  },
+  "GET /api/v1/me/notifications": {
+    "status": 200,
+    "body": {
+      "last": 1,
+      "items": [],
+      "every": 60,
+      "dot": 0,
+      "latest": 4
+    }
+  },
+  "GET /api/v1/me/notifications/recent": {
+    "status": 200,
+    "body": {
+      "items": [
+        {
+          "id": 1,
+          "title": "星遇同频",
+          "body": "有颗星连了你。",
+          "url": "/match/?tab=inbox",
+          "at": 1793034710075
+        }
+      ],
+      "read": 0
+    }
+  },
+  "GET /api/v1/me/crossings": {
+    "status": 200,
+    "body": {
+      "stars": [],
+      "n": 0,
+      "why": "verify",
+      "me": {
+        "star": 101,
+        "vrc": "Player1"
+      }
+    }
+  },
+  "GET /api/v1/me/mutuals": {
+    "status": 200,
+    "body": {
+      "stars": [
+        {
+          "n": 2,
+          "name": "彩蛋猎人",
+          "group": "G",
+          "star": 102,
+          "vrc": "Player2",
+          "vrcUser": null,
+          "at": 1793034710075
+        }
+      ],
+      "n": 1
+    }
+  },
+  "GET /api/v1/me/card": {
+    "status": 200,
+    "body": {
+      "n": 1,
+      "star": 101,
+      "verified": false,
+      "name": "彩蛋猎人",
+      "line": "进了新世界先去找隐藏房间，找到了就招呼同伴来看。",
+      "group": "G",
+      "groupName": "漫游星群",
+      "vibe": "随场",
+      "scores": {
+        "G": 50,
+        "W": 50,
+        "Z": 50,
+        "L": 50
+      },
+      "intro": "喜欢在安静的世界里散步。",
+      "deco": null
+    }
+  },
+  "GET /api/v1/me/maps": {
+    "status": 200,
+    "body": {
+      "maps": [
+        {
+          "world": "wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+          "name": "星夜茶屋",
+          "score": 9,
+          "words": "光影很舒服",
+          "wordsOk": "ok",
+          "at": 1793034710075,
+          "page": "https://vrcc.cc/maps/wrld_aaaaaaaa-0000-4000-8000-0000000000a1"
+        }
+      ]
+    }
+  },
+  "GET /api/v1/me/maps/{world}": {
+    "status": 200,
+    "body": {
+      "world": "wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+      "name": "星夜茶屋",
+      "board": true,
+      "pending": false,
+      "off": false,
+      "avg": 8.5,
+      "raters": 2,
+      "mine": 9,
+      "can": true,
+      "need": null,
+      "words": "光影很舒服",
+      "wordsOk": "ok",
+      "img": "/api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1"
+    }
+  },
+  "POST /api/v1/me/maps/{world}/rating": {
+    "status": 200,
+    "body": {
+      "world": "wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+      "name": "星夜茶屋",
+      "board": true,
+      "pending": false,
+      "off": false,
+      "avg": 8.5,
+      "raters": 2,
+      "mine": 9,
+      "can": true,
+      "need": null,
+      "words": "光影很舒服",
+      "wordsOk": "ok",
+      "img": "/api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1"
+    }
+  },
+  "GET /api/v1/me/today": {
+    "status": 200,
+    "body": {
+      "day": "#1",
+      "cards": [],
+      "round": {
+        "at": 1793034710230,
+        "next": 1793113910230,
+        "used": 0,
+        "max": 6,
+        "remind": false
+      }
+    }
+  },
+  "GET /api/v1/me/inbox": {
+    "status": 200,
+    "body": {
+      "cards": [
+        {
+          "n": 2,
+          "pos": "G1",
+          "name": "彩蛋猎人",
+          "line": "进了新世界先去找隐藏房间，找到了就招呼同伴来看。",
+          "group": "G",
+          "groupName": "漫游星群",
+          "vibe": "随场",
+          "lead": "双向",
+          "intro": "喜欢在安静的世界里散步。",
+          "about": [],
+          "common": [
+            "你们都想找人一起逛新世界",
+            "你们都常在工作日晚上在线",
+            "你们都在漫游星群"
+          ],
+          "photo": true,
+          "rating": null,
+          "star": 102,
+          "verified": false,
+          "scores": {
+            "G": 50,
+            "W": 50,
+            "Z": 50,
+            "L": 50
+          },
+          "deco": null,
+          "sprout": true,
+          "at": 1793034710075,
+          "src": "rec",
+          "linked": true,
+          "mutual": true,
+          "pair": {
+            "at": 1793034710075,
+            "src": "rec",
+            "mine": true
+          },
+          "vrc": "Player2",
+          "friends": 0,
+          "unread": 1
+        },
+        {
+          "n": 3,
+          "pos": "G1",
+          "name": "彩蛋猎人",
+          "line": "进了新世界先去找隐藏房间，找到了就招呼同伴来看。",
+          "group": "G",
+          "groupName": "漫游星群",
+          "vibe": "随场",
+          "lead": "双向",
+          "intro": "喜欢在安静的世界里散步。",
+          "about": [],
+          "common": [
+            "你们都想找人一起逛新世界",
+            "你们都常在工作日晚上在线",
+            "你们都在漫游星群"
+          ],
+          "photo": false,
+          "rating": null,
+          "star": null,
+          "verified": false,
+          "scores": {
+            "G": 50,
+            "W": 50,
+            "Z": 50,
+            "L": 50
+          },
+          "deco": null,
+          "sprout": true,
+          "at": 1793034710075,
+          "src": "rec",
+          "linked": false,
+          "mutual": false,
+          "friends": 0
+        }
+      ],
+      "counts": {
+        "in": 2,
+        "out": 2,
+        "mutual": 1,
+        "regenToday": 0,
+        "styles": [],
+        "notes": 0,
+        "msgs": 1
+      },
+      "seen": 0,
+      "cross": {
+        "n": 0,
+        "fresh": 0
+      }
+    }
+  },
+  "POST /api/v1/me/chats/{n} POST": {
+    "status": 200,
+    "body": {
+      "msg": {
+        "id": 2,
+        "text": "周末一起去看星星吗",
+        "at": 1793034710241,
+        "kind": "chat",
+        "mine": true,
+        "check": "wait"
+      }
+    }
+  },
+  "GET /api/v1/me/chats": {
+    "status": 200,
+    "body": {
+      "threads": [
+        {
+          "peer": {
+            "n": 2,
+            "name": "彩蛋猎人",
+            "group": "G",
+            "photo": true,
+            "me": false,
+            "mutual": true,
+            "vrc": "Player2"
+          },
+          "last": {
+            "id": 2,
+            "text": "周末一起去看星星吗",
+            "at": 1793034710241,
+            "kind": "chat",
+            "mine": true,
+            "check": "wait"
+          },
+          "unread": 1
+        }
+      ]
+    }
+  },
+  "GET /api/v1/me/chats/{n}": {
+    "status": 200,
+    "body": {
+      "msgs": [
+        {
+          "id": 1,
+          "text": "好呀，几点？",
+          "at": 1793034710075,
+          "kind": "chat",
+          "mine": false
+        },
+        {
+          "id": 2,
+          "text": "周末一起去看星星吗",
+          "at": 1793034710241,
+          "kind": "chat",
+          "mine": true,
+          "check": "wait"
+        }
+      ],
+      "more": false,
+      "peer": {
+        "n": 2,
+        "name": "彩蛋猎人",
+        "group": "G",
+        "photo": true,
+        "me": false,
+        "mutual": true,
+        "vrc": "Player2"
+      },
+      "max": 200
+    }
+  },
+  "GET /api/v1/me/posts": {
+    "status": 200,
+    "body": {
+      "posts": [
+        {
+          "id": 1,
+          "kind": "shot",
+          "text": "今天的星星很亮",
+          "vis": "all",
+          "at": 1793034710075,
+          "mine": false,
+          "img": {
+            "w": 4,
+            "h": 3,
+            "grid": null,
+            "url": "https://vrcc.cc/api/v1/img/1?client=probe-full&g=1&exp=1793035310260&sig=9ffe23e8ca30a38aee549f89f1c3f29a54d20f7cae5a3e2d10c5a0404408729a"
+          },
+          "map": null,
+          "lit": 0,
+          "litMe": false,
+          "cmts": 1,
+          "last": [
+            {
+              "cid": 1,
+              "text": "谢谢",
+              "at": 1793034710075,
+              "who": {
+                "n": 2,
+                "name": "彩蛋猎人",
+                "group": "G",
+                "photo": true,
+                "me": false,
+                "mutual": true,
+                "vrc": "Player2"
+              }
+            }
+          ],
+          "card": {
+            "n": 2,
+            "pos": "G1",
+            "name": "彩蛋猎人",
+            "line": "进了新世界先去找隐藏房间，找到了就招呼同伴来看。",
+            "group": "G",
+            "groupName": "漫游星群",
+            "vibe": "随场",
+            "lead": "双向",
+            "intro": "喜欢在安静的世界里散步。",
+            "about": [],
+            "common": [
+              "你们都想找人一起逛新世界",
+              "你们都常在工作日晚上在线",
+              "你们都在漫游星群"
+            ],
+            "photo": true,
+            "rating": null,
+            "star": 102,
+            "verified": false,
+            "scores": {
+              "G": 50,
+              "W": 50,
+              "Z": 50,
+              "L": 50
+            },
+            "deco": null,
+            "sprout": true,
+            "linked": true,
+            "mutual": true,
+            "vrc": "Player2"
+          }
+        }
+      ],
+      "asks": [],
+      "pinned": null,
+      "dot": {
+        "maps": false,
+        "went": false
+      },
+      "page": 20,
+      "shot": true,
+      "maps": false,
+      "max": {
+        "text": 80,
+        "cmt": 100,
+        "stk": 3
+      }
+    }
+  },
+  "POST /api/v1/me/posts POST": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "post": {
+        "id": 3,
+        "kind": "text",
+        "text": "今天认识了新朋友",
+        "vis": "all",
+        "at": 1793034710264,
+        "mine": true,
+        "check": "wait",
+        "img": null,
+        "map": null,
+        "lit": 0,
+        "litMe": false,
+        "cmts": 0,
+        "last": [],
+        "card": null
+      }
+    }
+  },
+  "GET /api/v1/me/stars/{n}/photo": {
+    "status": 200,
+    "body": {
+      "level": 2,
+      "at": 1793034710075,
+      "v": "1793034710075:2",
+      "url": "https://vrcc.cc/api/v1/photo/2?client=probe-full&g=1&exp=1793035310271&sig=02a2b4a4c00b83f5efe498ef3bf58d821d0db7b6cfc5da4fc8d2f20a8e354d08"
+    }
+  },
+  "POST /api/v1/me/posts/{id}/comments POST": {
+    "status": 200,
+    "body": {
+      "post": {
+        "id": 1,
+        "kind": "shot",
+        "text": "今天的星星很亮",
+        "vis": "all",
+        "at": 1793034710075,
+        "mine": false,
+        "img": {
+          "w": 4,
+          "h": 3,
+          "grid": null
+        },
+        "map": null,
+        "lit": 0,
+        "litMe": false,
+        "cmts": 2,
+        "last": [
+          {
+            "cid": 1,
+            "text": "谢谢",
+            "at": 1793034710075,
+            "who": {
+              "n": 2,
+              "name": "彩蛋猎人",
+              "group": "G",
+              "photo": true,
+              "me": false,
+              "mutual": true,
+              "vrc": "Player2"
+            }
+          },
+          {
+            "cid": 2,
+            "text": "拍得真好",
+            "at": 1793034710274,
+            "who": {
+              "n": 1,
+              "name": "彩蛋猎人",
+              "group": "G",
+              "photo": false,
+              "me": true,
+              "mutual": false
+            },
+            "check": "wait"
+          }
+        ],
+        "card": {
+          "n": 2,
+          "pos": "G1",
+          "name": "彩蛋猎人",
+          "line": "进了新世界先去找隐藏房间，找到了就招呼同伴来看。",
+          "group": "G",
+          "groupName": "漫游星群",
+          "vibe": "随场",
+          "lead": "双向",
+          "intro": "喜欢在安静的世界里散步。",
+          "about": [],
+          "common": [
+            "你们都想找人一起逛新世界",
+            "你们都常在工作日晚上在线",
+            "你们都在漫游星群"
+          ],
+          "photo": true,
+          "rating": null,
+          "star": 102,
+          "verified": false,
+          "scores": {
+            "G": 50,
+            "W": 50,
+            "Z": 50,
+            "L": 50
+          },
+          "deco": null,
+          "sprout": true,
+          "linked": true,
+          "mutual": true,
+          "vrc": "Player2"
+        }
+      },
+      "cmts": [
+        {
+          "cid": 1,
+          "text": "谢谢",
+          "at": 1793034710075,
+          "who": {
+            "n": 2,
+            "name": "彩蛋猎人",
+            "group": "G",
+            "photo": true,
+            "me": false,
+            "mutual": true,
+            "vrc": "Player2"
+          }
+        },
+        {
+          "cid": 2,
+          "text": "拍得真好",
+          "at": 1793034710274,
+          "who": {
+            "n": 1,
+            "name": "彩蛋猎人",
+            "group": "G",
+            "photo": false,
+            "me": true,
+            "mutual": false
+          },
+          "check": "wait"
+        }
+      ]
+    }
+  },
+  "GET /api/v1/me/posts/{id}/comments": {
+    "status": 200,
+    "body": {
+      "post": {
+        "id": 1,
+        "kind": "shot",
+        "text": "今天的星星很亮",
+        "vis": "all",
+        "at": 1793034710075,
+        "mine": false,
+        "img": {
+          "w": 4,
+          "h": 3,
+          "grid": null
+        },
+        "map": null,
+        "lit": 0,
+        "litMe": false,
+        "cmts": 2,
+        "last": [
+          {
+            "cid": 1,
+            "text": "谢谢",
+            "at": 1793034710075,
+            "who": {
+              "n": 2,
+              "name": "彩蛋猎人",
+              "group": "G",
+              "photo": true,
+              "me": false,
+              "mutual": true,
+              "vrc": "Player2"
+            }
+          },
+          {
+            "cid": 2,
+            "text": "拍得真好",
+            "at": 1793034710274,
+            "who": {
+              "n": 1,
+              "name": "彩蛋猎人",
+              "group": "G",
+              "photo": false,
+              "me": true,
+              "mutual": false
+            },
+            "check": "wait"
+          }
+        ],
+        "card": {
+          "n": 2,
+          "pos": "G1",
+          "name": "彩蛋猎人",
+          "line": "进了新世界先去找隐藏房间，找到了就招呼同伴来看。",
+          "group": "G",
+          "groupName": "漫游星群",
+          "vibe": "随场",
+          "lead": "双向",
+          "intro": "喜欢在安静的世界里散步。",
+          "about": [],
+          "common": [
+            "你们都想找人一起逛新世界",
+            "你们都常在工作日晚上在线",
+            "你们都在漫游星群"
+          ],
+          "photo": true,
+          "rating": null,
+          "star": 102,
+          "verified": false,
+          "scores": {
+            "G": 50,
+            "W": 50,
+            "Z": 50,
+            "L": 50
+          },
+          "deco": null,
+          "sprout": true,
+          "linked": true,
+          "mutual": true,
+          "vrc": "Player2"
+        }
+      },
+      "cmts": [
+        {
+          "cid": 1,
+          "text": "谢谢",
+          "at": 1793034710075,
+          "who": {
+            "n": 2,
+            "name": "彩蛋猎人",
+            "group": "G",
+            "photo": true,
+            "me": false,
+            "mutual": true,
+            "vrc": "Player2"
+          }
+        },
+        {
+          "cid": 2,
+          "text": "拍得真好",
+          "at": 1793034710274,
+          "who": {
+            "n": 1,
+            "name": "彩蛋猎人",
+            "group": "G",
+            "photo": false,
+            "me": true,
+            "mutual": false
+          },
+          "check": "wait"
+        }
+      ]
+    }
+  },
+  "POST /api/v1/me/posts/{id}/light": {
+    "status": 200,
+    "body": {
+      "post": {
+        "id": 1,
+        "kind": "shot",
+        "text": "今天的星星很亮",
+        "vis": "all",
+        "at": 1793034710075,
+        "mine": false,
+        "img": {
+          "w": 4,
+          "h": 3,
+          "grid": null
+        },
+        "map": null,
+        "lit": 1,
+        "litMe": true,
+        "cmts": 2,
+        "last": [
+          {
+            "cid": 1,
+            "text": "谢谢",
+            "at": 1793034710075,
+            "who": {
+              "n": 2,
+              "name": "彩蛋猎人",
+              "group": "G",
+              "photo": true,
+              "me": false,
+              "mutual": true,
+              "vrc": "Player2"
+            }
+          },
+          {
+            "cid": 2,
+            "text": "拍得真好",
+            "at": 1793034710274,
+            "who": {
+              "n": 1,
+              "name": "彩蛋猎人",
+              "group": "G",
+              "photo": false,
+              "me": true,
+              "mutual": false
+            },
+            "check": "wait"
+          }
+        ],
+        "card": {
+          "n": 2,
+          "pos": "G1",
+          "name": "彩蛋猎人",
+          "line": "进了新世界先去找隐藏房间，找到了就招呼同伴来看。",
+          "group": "G",
+          "groupName": "漫游星群",
+          "vibe": "随场",
+          "lead": "双向",
+          "intro": "喜欢在安静的世界里散步。",
+          "about": [],
+          "common": [
+            "你们都想找人一起逛新世界",
+            "你们都常在工作日晚上在线",
+            "你们都在漫游星群"
+          ],
+          "photo": true,
+          "rating": null,
+          "star": 102,
+          "verified": false,
+          "scores": {
+            "G": 50,
+            "W": 50,
+            "Z": 50,
+            "L": 50
+          },
+          "deco": null,
+          "sprout": true,
+          "linked": true,
+          "mutual": true,
+          "vrc": "Player2"
+        }
+      }
+    }
+  },
+  "GET /api/v1/me/board": {
+    "status": 200,
+    "body": {
+      "sort": "top",
+      "min": 1,
+      "dot": {
+        "maps": false,
+        "went": false
+      },
+      "maps": [
+        {
+          "id": "wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+          "name": "星夜茶屋",
+          "author": "某位作者",
+          "cap": 16,
+          "img": "/api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+          "status": "ok",
+          "teen": true,
+          "avg": 8.5,
+          "raters": 2,
+          "adj": 8.5,
+          "went": 0,
+          "hot": {
+            "id": 1,
+            "text": "光影很舒服",
+            "up": 0,
+            "vote": 0,
+            "mine": true
+          },
+          "hots": [
+            {
+              "id": 1,
+              "text": "光影很舒服",
+              "up": 0,
+              "vote": 0,
+              "mine": true
+            },
+            {
+              "id": 2,
+              "text": "适合拍照",
+              "up": 0,
+              "vote": 0
+            }
+          ],
+          "weight": null,
+          "room": false
+        }
+      ]
+    }
+  },
+  "GET /api/v1/me/maps/{world}/page": {
+    "status": 200,
+    "body": {
+      "map": {
+        "id": "wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+        "name": "星夜茶屋",
+        "author": "某位作者",
+        "cap": 16,
+        "img": "/api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+        "status": "ok",
+        "teen": true,
+        "avg": 8.5,
+        "raters": 2,
+        "adj": 8.5,
+        "adder": {
+          "n": 2,
+          "name": "彩蛋猎人",
+          "group": "G",
+          "photo": true,
+          "me": false,
+          "mutual": true,
+          "vrc": "Player2"
+        },
+        "went": 0,
+        "spread": [
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        "perf": null,
+        "rooms": []
+      },
+      "intro": {
+        "id": 1,
+        "text": "夜里人少，适合安静地坐一会儿。",
+        "up": 0,
+        "down": 0,
+        "at": 1793034710075,
+        "who": {
+          "n": 2,
+          "name": "彩蛋猎人",
+          "group": "G",
+          "photo": true,
+          "me": false,
+          "mutual": true,
+          "vrc": "Player2"
+        },
+        "mine": false,
+        "vote": 0,
+        "folded": false
+      },
+      "intros": 1,
+      "sort": "hot",
+      "rates": [
+        {
+          "id": 2,
+          "text": "适合拍照",
+          "score": 8,
+          "up": 0,
+          "down": 0,
+          "at": 1793034710075,
+          "who": {
+            "n": 2,
+            "name": "彩蛋猎人",
+            "group": "G",
+            "photo": true,
+            "me": false,
+            "mutual": true,
+            "vrc": "Player2"
+          },
+          "mine": false,
+          "vote": 0,
+          "folded": false
+        }
+      ],
+      "mine": {
+        "rate": {
+          "id": 1,
+          "text": "光影很舒服",
+          "score": 9,
+          "up": 0,
+          "down": 0,
+          "at": 1793034710225,
+          "who": {
+            "n": 1,
+            "name": "彩蛋猎人",
+            "group": "G",
+            "photo": false,
+            "me": true,
+            "mutual": false
+          },
+          "mine": true,
+          "vote": 0,
+          "folded": false,
+          "check": "ok"
+        },
+        "intro": null
+      },
+      "can": "yes",
+      "max": {
+        "text": 30,
+        "intro": 200
+      }
+    }
+  },
+  "GET /api/v1/me/maps/{world}/intros": {
+    "status": 200,
+    "body": {
+      "intros": [
+        {
+          "id": 1,
+          "text": "夜里人少，适合安静地坐一会儿。",
+          "up": 0,
+          "down": 0,
+          "at": 1793034710075,
+          "who": {
+            "n": 2,
+            "name": "彩蛋猎人",
+            "group": "G",
+            "photo": true,
+            "me": false,
+            "mutual": true,
+            "vrc": "Player2"
+          },
+          "mine": false,
+          "vote": 0,
+          "folded": false
+        }
+      ]
+    }
+  },
+  "POST /api/v1/me/links": {
+    "status": 200,
+    "body": {
+      "mutual": true,
+      "card": {
+        "n": 3,
+        "pos": "G1",
+        "name": "彩蛋猎人",
+        "line": "进了新世界先去找隐藏房间，找到了就招呼同伴来看。",
+        "group": "G",
+        "groupName": "漫游星群",
+        "vibe": "随场",
+        "lead": "双向",
+        "intro": "喜欢在安静的世界里散步。",
+        "about": [],
+        "common": [
+          "你们都想找人一起逛新世界",
+          "你们都常在工作日晚上在线",
+          "你们都在漫游星群"
+        ],
+        "photo": false,
+        "rating": null,
+        "star": 103,
+        "verified": false,
+        "scores": {
+          "G": 50,
+          "W": 50,
+          "Z": 50,
+          "L": 50
+        },
+        "deco": null,
+        "sprout": true,
+        "linked": true,
+        "mutual": true,
+        "pair": {
+          "at": 1793034710308,
+          "src": "rec",
+          "mine": false
+        },
+        "vrc": "Player3",
+        "friends": 0
+      }
+    }
+  },
+  "POST /api/v1/me/stars/{n}/hide": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "counts": {
+        "in": 1,
+        "out": 2,
+        "mutual": 1,
+        "regenToday": 0,
+        "styles": [],
+        "notes": 0,
+        "msgs": 0
+      }
+    }
+  },
+  "GET /api/v1/me/hidden": {
+    "status": 200,
+    "body": {
+      "blocks": [
+        {
+          "n": 3,
+          "at": 1793034710312,
+          "vrc": "Player3",
+          "name": "彩蛋猎人",
+          "report": null
+        }
+      ]
+    }
+  },
+  "POST /api/v1/me/stars/{n}/unhide": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "counts": {
+        "in": 2,
+        "out": 2,
+        "mutual": 1,
+        "regenToday": 0,
+        "styles": [],
+        "notes": 0,
+        "msgs": 0
+      }
+    }
+  },
+  "POST /api/v1/me/map-votes": {
+    "status": 200,
+    "body": {
+      "kind": "rate",
+      "id": 2,
+      "up": 1,
+      "down": 0,
+      "mine": 1
+    }
+  },
+  "POST /api/v1/me/stars/{n}/say": {
+    "status": 200,
+    "body": {
+      "said": {
+        "text": "你好，很高兴遇见你",
+        "check": "wait"
+      }
+    }
+  },
+  "POST /api/v1/me/messages/{id}/report": {
+    "status": 200,
+    "body": {
+      "ok": true
+    }
+  },
+  "POST /api/v1/me/messages/{id}/delete": {
+    "status": 200,
+    "body": {
+      "ok": true
+    }
+  },
+  "POST /api/v1/me/posts/{id}/with": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "post": null
+    }
+  },
+  "POST /api/v1/me/comments/{cid}/report": {
+    "status": 200,
+    "body": {
+      "ok": true
+    }
+  },
+  "POST /api/v1/me/posts/{id}/report": {
+    "status": 200,
+    "body": {
+      "ok": true
+    }
+  },
+  "POST /api/v1/me/comments/{cid}/delete": {
+    "status": 200,
+    "body": {
+      "post": null,
+      "cmts": []
+    }
+  },
+  "POST /api/v1/me/posts/{id}/delete": {
+    "status": 200,
+    "body": {
+      "ok": true
+    }
+  },
+  "POST /api/v1/me/maps POST": {
+    "status": 200,
+    "body": {
+      "map": {
+        "id": "wrld_bbbbbbbb-0000-4000-8000-0000000000b2",
+        "name": "雨中车站",
+        "author": "某位作者",
+        "cap": 16,
+        "img": "/api/match?xdimg=wrld_bbbbbbbb-0000-4000-8000-0000000000b2",
+        "status": "ok",
+        "teen": true,
+        "avg": null,
+        "raters": 0,
+        "adj": 8.5,
+        "adder": {
+          "n": 1,
+          "name": "彩蛋猎人",
+          "group": "G",
+          "photo": false,
+          "me": true,
+          "mutual": false
+        },
+        "went": 0,
+        "spread": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "perf": null,
+        "rooms": []
+      },
+      "intro": null,
+      "intros": 0,
+      "sort": "hot",
+      "rates": [],
+      "mine": {
+        "rate": null,
+        "intro": null
+      },
+      "can": "yes",
+      "max": {
+        "text": 30,
+        "intro": 200
+      }
+    }
+  },
+  "POST /api/v1/me/maps/{world}/intro": {
+    "status": 200,
+    "body": {
+      "map": {
+        "id": "wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+        "name": "星夜茶屋",
+        "author": "某位作者",
+        "cap": 16,
+        "img": "/api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+        "status": "ok",
+        "teen": true,
+        "avg": 8.5,
+        "raters": 2,
+        "adj": 8.5,
+        "adder": {
+          "n": 2,
+          "name": "彩蛋猎人",
+          "group": "G",
+          "photo": true,
+          "me": false,
+          "mutual": true,
+          "vrc": "Player2"
+        },
+        "went": 0,
+        "spread": [
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        "perf": null,
+        "rooms": []
+      },
+      "intro": {
+        "id": 1,
+        "text": "夜里人少，适合安静地坐一会儿。",
+        "up": 0,
+        "down": 0,
+        "at": 1793034710075,
+        "who": {
+          "n": 2,
+          "name": "彩蛋猎人",
+          "group": "G",
+          "photo": true,
+          "me": false,
+          "mutual": true,
+          "vrc": "Player2"
+        },
+        "mine": false,
+        "vote": 0,
+        "folded": false
+      },
+      "intros": 1,
+      "sort": "hot",
+      "rates": [
+        {
+          "id": 2,
+          "text": "适合拍照",
+          "score": 8,
+          "up": 1,
+          "down": 0,
+          "at": 1793034710075,
+          "who": {
+            "n": 2,
+            "name": "彩蛋猎人",
+            "group": "G",
+            "photo": true,
+            "me": false,
+            "mutual": true,
+            "vrc": "Player2"
+          },
+          "mine": false,
+          "vote": 1,
+          "folded": false
+        }
+      ],
+      "mine": {
+        "rate": {
+          "id": 1,
+          "text": "光影很舒服",
+          "score": 9,
+          "up": 0,
+          "down": 0,
+          "at": 1793034710225,
+          "who": {
+            "n": 1,
+            "name": "彩蛋猎人",
+            "group": "G",
+            "photo": false,
+            "me": true,
+            "mutual": false
+          },
+          "mine": true,
+          "vote": 0,
+          "folded": false,
+          "check": "ok"
+        },
+        "intro": {
+          "id": 2,
+          "text": "雨天来的时候灯光最好看。",
+          "up": 0,
+          "down": 0,
+          "at": 1793034710353,
+          "who": {
+            "n": 1,
+            "name": "彩蛋猎人",
+            "group": "G",
+            "photo": false,
+            "me": true,
+            "mutual": false
+          },
+          "mine": true,
+          "vote": 0,
+          "folded": false,
+          "check": "wait"
+        }
+      },
+      "can": "yes",
+      "max": {
+        "text": 30,
+        "intro": 200
+      }
+    }
+  },
+  "POST /api/v1/me/maps/{world}/intro/delete": {
+    "status": 200,
+    "body": {
+      "map": {
+        "id": "wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+        "name": "星夜茶屋",
+        "author": "某位作者",
+        "cap": 16,
+        "img": "/api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+        "status": "ok",
+        "teen": true,
+        "avg": 8.5,
+        "raters": 2,
+        "adj": 8.5,
+        "adder": {
+          "n": 2,
+          "name": "彩蛋猎人",
+          "group": "G",
+          "photo": true,
+          "me": false,
+          "mutual": true,
+          "vrc": "Player2"
+        },
+        "went": 0,
+        "spread": [
+          1,
+          1,
+          0,
+          0,
+          0
+        ],
+        "perf": null,
+        "rooms": []
+      },
+      "intro": {
+        "id": 1,
+        "text": "夜里人少，适合安静地坐一会儿。",
+        "up": 0,
+        "down": 0,
+        "at": 1793034710075,
+        "who": {
+          "n": 2,
+          "name": "彩蛋猎人",
+          "group": "G",
+          "photo": true,
+          "me": false,
+          "mutual": true,
+          "vrc": "Player2"
+        },
+        "mine": false,
+        "vote": 0,
+        "folded": false
+      },
+      "intros": 1,
+      "sort": "hot",
+      "rates": [
+        {
+          "id": 2,
+          "text": "适合拍照",
+          "score": 8,
+          "up": 1,
+          "down": 0,
+          "at": 1793034710075,
+          "who": {
+            "n": 2,
+            "name": "彩蛋猎人",
+            "group": "G",
+            "photo": true,
+            "me": false,
+            "mutual": true,
+            "vrc": "Player2"
+          },
+          "mine": false,
+          "vote": 1,
+          "folded": false
+        }
+      ],
+      "mine": {
+        "rate": {
+          "id": 1,
+          "text": "光影很舒服",
+          "score": 9,
+          "up": 0,
+          "down": 0,
+          "at": 1793034710225,
+          "who": {
+            "n": 1,
+            "name": "彩蛋猎人",
+            "group": "G",
+            "photo": false,
+            "me": true,
+            "mutual": false
+          },
+          "mine": true,
+          "vote": 0,
+          "folded": false,
+          "check": "ok"
+        },
+        "intro": null
+      },
+      "can": "yes",
+      "max": {
+        "text": 30,
+        "intro": 200
+      }
+    }
+  },
+  "POST /api/v1/me/map-reports": {
+    "status": 200,
+    "body": {
+      "ok": true
+    }
+  },
+  "POST /api/v1/me/maps/{world}/rating/delete": {
+    "status": 200,
+    "body": {
+      "map": {
+        "id": "wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+        "name": "星夜茶屋",
+        "author": "某位作者",
+        "cap": 16,
+        "img": "/api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
+        "status": "ok",
+        "teen": true,
+        "avg": 8,
+        "raters": 1,
+        "adj": 8,
+        "adder": {
+          "n": 2,
+          "name": "彩蛋猎人",
+          "group": "G",
+          "photo": true,
+          "me": false,
+          "mutual": true,
+          "vrc": "Player2"
+        },
+        "went": 0,
+        "spread": [
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        "perf": null,
+        "rooms": []
+      },
+      "intro": {
+        "id": 1,
+        "text": "夜里人少，适合安静地坐一会儿。",
+        "up": 0,
+        "down": 0,
+        "at": 1793034710075,
+        "who": {
+          "n": 2,
+          "name": "彩蛋猎人",
+          "group": "G",
+          "photo": true,
+          "me": false,
+          "mutual": true,
+          "vrc": "Player2"
+        },
+        "mine": false,
+        "vote": 0,
+        "folded": false
+      },
+      "intros": 1,
+      "sort": "hot",
+      "rates": [],
+      "mine": {
+        "rate": null,
+        "intro": null
+      },
+      "can": "yes",
+      "max": {
+        "text": 30,
+        "intro": 200
+      }
+    }
+  },
+  "POST /api/v1/me/stars/{n}/report": {
+    "status": 200,
+    "body": {
+      "ok": true
+    }
+  },
+  "POST /api/v1/disconnect": {
+    "status": 200,
+    "body": {
+      "ok": true
+    }
+  }
+}

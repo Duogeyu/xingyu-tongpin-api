@@ -1,6 +1,6 @@
 # 星遇同频 · 开放接口
 
-**[📖 在线交互式 API 文档 (API Wiki)](https://docs.vrcc.cc/)** · **[OpenAPI 规范 (`openapi.yaml`)](openapi.yaml)** · **[最小示例 (`examples/client.mjs`)](examples/client.mjs)** · **[登录示例 (`examples/login-site.mjs`)](examples/login-site.mjs)** · **[更新记录 (`CHANGELOG.md`)](CHANGELOG.md)**
+**[📖 在线交互式 API 文档 (API Wiki)](https://docs.vrcc.cc/)** · **[OpenAPI 规范 (`openapi.yaml`)](openapi.yaml)** · **[最小示例 (`examples/client.mjs`)](examples/client.mjs)** · **[登录示例 (`examples/login-site.mjs`)](examples/login-site.mjs)** · **[示例回答 (`examples/responses.json`)](examples/responses.json)** · **[更新记录 (`CHANGELOG.md`)](CHANGELOG.md)**
 
 ---
 
@@ -22,6 +22,8 @@
 - [玩家自己的接口](#玩家自己的接口)（[设备授权](#设备授权post-apiv1devicecode)）
 - [贴纸素材](#贴纸素材)
 - [用星遇同频登录（网站）](#用星遇同频登录网站)
+- [同一个东西在不同接口里](#同一个东西在不同接口里)（翻页、没有值的时候）
+- [弃用中](#弃用中)
 - [频率限制](#频率限制)
 - [最小示例](#示例)
 - [授权与旧接口](#授权)
@@ -57,6 +59,9 @@
 | **玩家本人** | `POST` | [`/api/v1/me/chats/{n}`](#发私聊post-apiv1mechatsn) | `client` + `Bearer`（`chat.send`） | 替玩家发一条私聊（只在玩家自己点时） |
 | **玩家本人** | `GET` | [`/api/v1/me/posts`](#星友圈get-apiv1mepostsfallfriendminebefore) | `client` + `Bearer`（`posts`） | 星友圈动态 |
 | **玩家本人** | `POST` | [`/api/v1/me/posts`](#发星友圈post-apiv1meposts) | `client` + `Bearer`（`posts.write`） | 替玩家发一条文字动态（只在玩家自己点时） |
+| **玩家本人** | 见那一节 | [第三批的 24 个接口](#第三批举报和隐藏评论和点亮地图榜照片) | `client` + `Bearer`（`safety`、`posts`、`posts.write`、`maps`、`maps.write`、`maps.rate`、`photos`、`link`、`chat.send`） | 举报和隐藏、评论和点亮、删除和合照、玩家看到的地图榜和地图页、介绍、赞踩、添加地图、玩家照片、说一句、撤回私聊 |
+| **图片** | `GET` | `/api/v1/img/{id}`、`/api/v1/photo/{n}` | 签名链接（不用请求头） | 星友圈的图、玩家照片：用 `me/posts`、`me/stars/{n}/photo` 给的 `url`，10 分钟有效 |
+| **状态** | `GET` | [`/api/v1/status`](#运行状态) | 无 | 网站和接口现在能不能用 |
 | **登录** | `GET` | [`https://vrcc.cc/oauth/authorize`](#第一步把玩家送到星遇同频) | 浏览器跳转 | 用星遇同频登录：把玩家送过来，同意后带 `code` 回到你的网站 |
 | **登录** | `POST` | [`/api/v1/oauth/token`](#第二步换令牌-post-apiv1oauthtoken) | `client_id` + 密钥或 PKCE | 用 `code` 换令牌和玩家信息 |
 | **登录** | `GET` | [`/api/v1/oauth/userinfo`](#第三步再查一次玩家-get-apiv1oauthuserinfo) | `Bearer` | 再查一次这位玩家（玩家断开后返回 `401`） |
@@ -217,7 +222,12 @@ sequenceDiagram
 - **基础地址**：`https://vrcc.cc/api/v1/` 加下面的路径。
 - **客户端标识**：请求头 `X-Client: <标识>`。发不了请求头的（比如 VRChat 世界里的 Udon），在开放数据接口放在网址里：`?client=<标识>`。登记过的网站用自己的 `client_id`（`app_…`）当标识。`oauth/` 下面的两个接口不用 `X-Client`。
 - **玩家自己的接口**：请求头 `Authorization: Bearer <令牌>`。**令牌绝不能放进网址。**
-- **请求与响应格式**：`POST` 的正文是 JSON，也可以是表单（`application/x-www-form-urlencoded`），最大 2 KB。是和否的参数（比如点亮的 `on`、合照的 `yes`、`?mark`）：`true`、`1` 是，`false`、`0` 否，JSON 的 `true` / `false` 和字符串 `"true"` / `"1"` 都认；所有回答都是 JSON。出错时 HTTP 状态码不是 `2xx`，正文是 `{"error": "…"}`。
+- **请求与响应格式**：`POST` 的正文是 JSON，也可以是表单（`application/x-www-form-urlencoded`），最大 2 KB。是和否的参数（比如点亮的 `on`、合照的 `yes`、`?mark`）：`true`、`1` 是，`false`、`0` 否，JSON 的 `true` / `false` 和字符串 `"true"` / `"1"` 都认；所有回答都是 JSON。出错时 HTTP 状态码不是 `2xx`，正文是 `{"error": "…"}`，有的还带 `need`、`why`、`every`。
+- **宽松的地方**：正文里不认识的字段会被忽略；数字写成字符串（`"score": "7"`）也认。`?client=` 在所有接口都能用，但请优先用请求头。
+- **只保证文档列出的字段**：「网页上的动作」的回答里可能还有别的字段，那是网页自己用的，可能变化或去掉，不要依赖。正在弃用的字段见「[弃用中](#弃用中)」。
+- **时间**：时间戳都是毫秒；`expires_in`、`interval`、`every`、`Retry-After` 是秒。
+- **停站维护**：网页上的动作（今天的星、连向我、私聊、星友圈、第三批）停站时回答 `503 {"error": "stop", "say": "说明", "until": 毫秒}`，令牌没事，等到 `until` 以后再试；提醒、星卡、地图榜照常。
+- **示例**：每个接口的完整示例回答在 [`examples/responses.json`](examples/responses.json)，是离线生成的假数据。
 
 ### 权限（scope）
 
@@ -253,7 +263,7 @@ sequenceDiagram
 
 每次调用都会再查一遍：审核被撤回，敏感接口当场回答 `403 scope_unreviewed`，`oauth/userinfo` 的 `vrc` 变成 `null`；普通接口照常能用。
 - 带「会看到其他玩家的……」的几项，同意页那一行就这么写，玩家知道你会看到别人的资料和消息。
-- **同意页列出要的每一项**，顶上写一共几项普通权限、几项敏感权限。敏感的是 `vrchat`、`maps.rate`、`crossings`、`mutuals`、`today`、`inbox`、`link`、`chat`、`chat.send`、`posts`、`posts.write`，排在前面、标着「敏感」；超过三项的先收起，玩家点开能看全。玩家不能只同意其中几项，所以只要用得到的。
+- **同意页列出要的每一项**，顶上写一共几项普通权限、几项敏感权限。敏感的是 `vrchat`、`maps.rate`、`crossings`、`mutuals`、`today`、`inbox`、`link`、`chat`、`chat.send`、`posts`、`posts.write`、`photos`、`maps.write`、`safety`，排在前面、标着「敏感」；超过三项的先收起，玩家点开能看全。玩家不能只同意其中几项，所以只要用得到的。
 - 没有权限时调 `me/…`，回答 `403` `{"error": "scope", "need": "<缺的权限>"}`。
 - 改资料、注销这类账号操作没有权限，也不会有。
 
@@ -281,6 +291,39 @@ sequenceDiagram
 | `400` | `invalid_scope` | 设备授权：`scope` 里有不认识的权限 |
 | `400` / `401` | `invalid_request`、`invalid_client`、`invalid_grant` 等 | 用星遇同频登录的错误，见「[换令牌](#第二步换令牌-post-apiv1oauthtoken)」 |
 | `401` | `invalid_token` | 用星遇同频登录：玩家断开了这个网站，或网站被停用 |
+| `404` | `code` | 连接码（`/connect`）不对、过期或已经用过 |
+| `429` | `too_soon` | 提醒轮询离上一次不到 25 秒，附带 `every` |
+| `429` | `busy` | 今天全站输错的连接码太多，连接功能暂停到明天 |
+| `405` | `method` | 用了 `GET`、`POST` 以外的方法 |
+| `500` | `server` | 服务器出错，稍后再试（`oauth/` 下面叫 `server_error`） |
+| `503` | `stop` | 停站维护，附带 `say`、`until`；令牌没事 |
+
+### 网页上的动作和打分的错误码
+
+这些是网页自己的规则，回答和网页一样。同一个码有两种状态的（`busy`、`xd_world`），按状态码区分。
+
+| HTTP 状态 | `error` | 意思 |
+| :---: | --- | --- |
+| `400` | `bad_target` | 对自己或不对的编号做这件事 |
+| `403` | `not_offered` | 这颗星现在不能连（或不能举报：没见过） |
+| `429` | `quota` | 这一轮连满了，`Retry-After` 是到下一轮的秒数 |
+| `429` | `fof_day` / `yq_link_day` / `cross_link_day` | 今天从星友的星友 / 星友圈 / 星轨相交连的次数用完了 |
+| `403` | `msg_not_mutual` | 私聊只能和互相连上的人 |
+| `400` | `msg_words` / `msg_empty` | 私聊或说一句没过检查（`why` 写原因）/ 是空的 |
+| `409` | `say_mutual` / `said` | 说一句：已经互相连上了（去私聊）/ 已经说过了 |
+| `400` | `yq_words` / `yq_empty` | 动态、评论、短评、介绍没过检查（`why` 写原因）/ 只有标点符号或空白 |
+| `409` | `yq_wait` / `yq_paused`、`msg_wait` / `msg_paused` | 玩家自己的星还在审核 / 被下架，暂时不能发言、打分 |
+| `404` | `yq_gone` | 那条动态或评论不在了 |
+| `404` | `map_gone` | 那条短评或介绍不在了 |
+| `409` | `map_wait` | 地图还在审核 |
+| `404` | `yq_off` | 星友圈（含地图榜）整体关着 |
+| `403` | `map_off` / `xd_world_no` | 这张地图不给打分 / 不给这位玩家看 |
+| `400` / `404` | `xd_world` | 地图 ID 格式不对 / VRChat 上没有这张图 |
+| `502` | `xd_search` | 去 VRChat 查地图失败，稍后再试 |
+| `409` | `busy` | 星卡还在生成（今天的星），过一会儿再试 |
+| `429` | `too_many` | 网页自己每天的次数用完了（和每个令牌自己的次数分开算） |
+
+`map_not_went`、`map_elsewhere` 从 2026-10-24 起不再返回（谁都能打分）。
 
 ### 桌面客户端页面的跨域（CORS）说明
 
@@ -304,7 +347,7 @@ sequenceDiagram
 
 ### 排行：`GET /api/v1/boards/maps?limit=20`
 
-返回**有评分**的地图，按总榜名次排，`limit` 取值 `1–100`（默认 `20`）。名次怎么算见下面「名次怎么算」。
+返回**有评分**的地图，按总榜名次排，`limit` 取值 `1–100`（默认 `20`；不是数字或是 `0` 时按 `20`，超过 `100` 按 `100`）。名次怎么算见下面「名次怎么算」。
 
 ```json
 {
@@ -341,6 +384,7 @@ sequenceDiagram
 | `maps[].weight` | `string \| null` | 多小咕实测的轻重：`light` 轻量、`mid` 中等、`heavy` 较重，没测过是 `null` |
 | `maps[].page` | `string` | 地图在星遇同频地图榜上的详情页网址 |
 | `maps[].img` | `string \| null` | 封面图网址 |
+| `maps[].hot` | `object \| null` | 热评：最热的一条短评 `{text, by, up, went}`，`by` 是「某位<星位>」，`went` 是写的人去过这张图；没有时是 `null` |
 
 ### 名次怎么算
 
@@ -530,6 +574,7 @@ sequenceDiagram
 | `items` | `array` | `since` 之后的新提醒，最多 5 条，**旧的在前**；只保留最近一天 |
 | `every` | `integer` | 建议多少秒问一次（通常为 `60`）；**离上一次不到 25 秒会返回 `429 too_soon`**（每个授权各算各的） |
 | `dot` | `integer` | 「星轨相交」里还没看过的新人数，可以在界面上当未读红点 |
+| `latest` | `integer` | 我们 VRCX 脚本的最新版本号（给 VRCX 脚本提示更新用，别的客户端用不到） |
 
 ---
 
@@ -725,7 +770,7 @@ sequenceDiagram
 | `board` / `pending` / `off` | `board: true` 在地图榜上；`pending: true` 加上了但还在审核；`off: true` 不给这位玩家看（**这时不要显示**）。三个都是 `false` 说明地图榜上还没有，玩家打分时会由他添加 |
 | `mine` | 玩家自己打过的分（1–10，没打过为 `null`） |
 | `words` / `wordsOk` | 玩家自己的短评和审核状态（`wait` 审核中、`ok` 通过、`hidden` 没通过） |
-| `can` / `need` | `can` 为现在能不能打分；不能时 `need` 说明缺什么：`verify` 先验证 VRChat 账号，`friend` 先同意机器人的好友请求，`go` 要先在这张地图上待一会儿 |
+| `can` / `need` | **已弃用。** 2026-10-24 起谁都能打分，`can` 恒为 `true`、`need` 恒为 `null`；2026-12-26 起不再返回 |
 | `img` | 封面图路径，接在 `https://vrcc.cc` 后面使用 |
 
 ---
@@ -751,18 +796,22 @@ sequenceDiagram
 
 | HTTP 状态 | `error` | 意思 |
 | :---: | --- | --- |
-| `403` | `map_not_went` | 还不能打分，响应里的 `need` 字段说明缺什么（`verify` / `friend` / `go`） |
-| `403` | `map_elsewhere` | 机器人看到玩家现在在别的地图 |
 | `403` | `map_off` / `xd_world_no` | 这张地图不给打分 / 不给这位玩家看 |
 | `400` | `yq_words` | 短评没通过检查，响应里的 `why` 字段说明原因 |
 | `400` | `yq_empty` | 短评只有标点符号或空白 |
 | `429` | `too_many` | 今天打分或添加新地图的次数用完了 |
+| `409` | `yq_wait` / `yq_paused` | 玩家自己的星还在审核 / 被下架 |
+| `404` | `yq_off` | 星友圈（含地图榜）整体关着 |
+| `404` | `xd_world` | VRChat 上没有这张图（第一次打分时要先添加） |
+| `502` | `xd_search` | 去 VRChat 查地图失败，稍后再试 |
+
+（`map_not_went`、`map_elsewhere` 从 2026-10-24 起不再返回。）
 
 ---
 
 ### 网页上的动作
 
-下面这些接口做的事和网页一样：今天的星、连向我、连线、私聊、星友圈。规则和上限都是网页的（比如只能连今天这一轮的星、只能和互相连上的人私聊、发言要过检查、16–17 岁和 18 岁以上分开），回答也和网页一样。这里只写主要字段，其余字段跟网页一致，以后可能会加。
+下面这些接口做的事和网页一样：今天的星、连向我、连线、私聊、星友圈。规则和上限都是网页的（比如只能连今天这一轮的星、只能和互相连上的人私聊、发言要过检查、16–17 岁和 18 岁以上分开），回答也和网页一样。这里只写主要字段：没写到的字段是网页自己用的，可能变化或去掉，不要依赖。完整的示例回答见 [`examples/responses.json`](examples/responses.json)。
 
 这一批的权限都是敏感权限，要[审核](#申请审核)过才能给别的玩家用。另外每个令牌自己每天还有上限：这一批的读接口加起来 1000 次，连线 20 次，私聊 100 条，发星友圈 5 条，超了回答 `429 too_many`。
 
@@ -813,9 +862,9 @@ sequenceDiagram
 ```
 
 - `cards`：连向玩家的星，最近的在前。
-- `counts`：连向我、我连向、互相连上的人数，还有未读通知、私聊等数字。
+- `counts`：连向我（`in`）、我连向（`out`）、互相连上（`mutual`）的人数，未读通知（`notes`）、未读私聊（`msgs`）。`regenToday`、`styles` 已弃用（网页不显示），2026-11-26 起不再返回。
 - `seen`：上次看过的最新时间，`at` 比它新的就是新的。
-- `cross`：星轨相交的未读数。
+- `cross`：星轨相交，`{"n": 一共几颗, "fresh": 还没看过的几颗}`。
 
 ---
 
@@ -888,7 +937,7 @@ sequenceDiagram
 - 签名只对拿到它的那个授权有效，10 分钟后过期。
 - 每次打开都会重新检查：授权还在、还有 `posts` 权限、客户端没被停用，而且这条动态玩家现在还看得到（没删、没被隐藏，好友可见、星池这些规则照旧）。不满足就是 `404 {"error": "expired"}`（令牌没事），重新请求一次星友圈就有新链接。
 - 回答：`image/jpeg`，`Cache-Control: private, max-age=600`。算一次读取（每个授权每天 1000 次）。
-- 只有星友圈动态的配图和合照；玩家星卡上的照片不提供。
+- 玩家照片走 `me/stars/{n}/photo` 给的 `/api/v1/photo/{n}` 链接，规则一样，互相连上才是清晰的（自己的总是清晰的）。
 
 ---
 
@@ -973,7 +1022,7 @@ sequenceDiagram
 
 #### 申请审核
 
-要用敏感权限（`vrchat`、`maps.rate`、`crossings`、`mutuals`、`today`、`inbox`、`link`、`chat`、`chat.send`、`posts`、`posts.write`）的，在「我的资料 → 第三方客户端 → 我登记的应用」点「申请审核」，填三项：
+要用敏感权限（`vrchat`、`maps.rate`、`crossings`、`mutuals`、`today`、`inbox`、`link`、`chat`、`chat.send`、`posts`、`posts.write`、`photos`、`maps.write`、`safety`）的，在「我的资料 → 第三方客户端 → 我登记的应用」点「申请审核」，填三项：
 
 - **做什么用**
 - **源码地址**：`https://`。客户端必须开源
@@ -1159,6 +1208,57 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 
 ---
 
+## 同一个东西在不同接口里
+
+接口是一批一批加的，同一个东西在不同接口里字段不完全一样。旧的不会改名、改类型（会弄坏现有客户端），按下面的表对应；以后新加的接口用已有的写法。
+
+| 东西 | 接口 | 怎么写 |
+| --- | --- | --- |
+| 地图的 ID | 开放数据、`me/maps`、`me/maps/{world}` | `world` |
+| | `me/board`、地图页（`me/maps/{world}/page`） | `id` |
+| 地图的图 | 开放数据 | `img`：完整网址 `https://vrcc.cc/maps/<id>.jpg` |
+| | `me/maps/{world}`、`me/board`、地图页 | `img`：路径 `/api/match?xdimg=…`，接在 `https://vrcc.cc` 后面 |
+| 热评 | 开放数据 | `hot: {text, by, up, went}`（`by` 是「某位<星位>」） |
+| | `me/board` | `hot: {id, text, up, vote, mine?, went?}`，还有最多 3 条的 `hots` |
+| 能不能打分 | `me/maps/{world}` | `can: true`（已弃用） |
+| | 地图页 | `can: "yes"` |
+| 别的星 | `me/crossings` | `{n, name, line, group, star, intro（前 60 字）, vrc, linked, mutual, at, fresh}` |
+| | `me/mutuals` | `{n, name, group, star, vrc, vrcUser, at}` |
+| | 网页上的动作（`cards[]`、`card`） | 完整的星卡，见「[网页上的动作](#网页上的动作)」 |
+| | 私聊、评论、地图页里的人（`peer`、`who`） | `{n, name, group, photo, me, mutual, vrc?, verified?}`；地图页在没有 `mutuals` 时只给 `{name: "某位<星位>", group, me}` |
+| 玩家自己 | `device/token`、`connect` | `me: {star, vrc}`，`vrc` 是 VRChat 名字（字符串） |
+| | `oauth/token`、`oauth/userinfo` | `user: {sub, star, verified, vrc}`，`vrc` 是 `{id, name}`（对象） |
+| 换到的令牌 | `device/token` | `access_token`、`token_type`、`scope` |
+| | `connect` | `token` |
+| 星轨相交未读 | `me/notifications` | `dot`：数字 |
+| | `me/inbox` | `cross`：`{n, fresh}` |
+| 动态的图 | `me/posts` | `img: {w, h, grid, url}` |
+| | 评论、点亮的回答里的 `post` | `img: {w, h, grid}`，没有 `url`，要看图请重新拿 `me/posts` |
+
+**没有值的时候：** `me/crossings`、`me/mutuals`、开放数据里没有值的字段是 `null`；网页上的动作里，`vrc`、`vrcUser`、`check`、`went`、`verified`、`why` 这类只在有值时才出现，没有时字段不在。两种都要能处理。
+
+**翻页：**
+
+| 接口 | 怎么翻 | 一次最多 |
+| --- | --- | --- |
+| `me/notifications` | `?since=<上次的 last>` | 5 条 |
+| `me/chats/{n}` | `?before=<id>` 往前、`?after=<id>` 往后、`?since=<id>`；回答 `more` 表示前面还有 | 一页 |
+| `me/posts` | `?before=<上一页最后一条的 id>`；回答 `page` 是每页条数 | `page` 条 |
+| `boards/maps` | `?limit=`（1–100） | 100 |
+| `me/inbox`、`me/mutuals`、`me/maps` | 不能翻页 | 200 |
+| `me/hidden` | 不能翻页 | 300 |
+
+## 弃用中
+
+这些字段网页上不显示（或者已经没有意义），到期后不再返回。要改的地方会先写在 [CHANGELOG](CHANGELOG.md)。
+
+| 字段 | 在哪 | 为什么 | 哪天起不再返回 |
+| --- | --- | --- | --- |
+| `counts.regenToday`、`counts.styles` | `me/inbox`，隐藏、恢复的回答 | 网页不显示，是仓库里的数据 | 2026-11-26 |
+| `teen`、`adj` | `me/board`、地图页 | 网页不显示，是内部的标记和排序分 | 2026-12-26 |
+| `vibe` | `me/card` 和所有星卡 | 网页的星卡上不显示 | 2026-12-26 |
+| `can`、`need` | `me/maps/{world}`、打分的回答 | 谁都能打分，恒为 `true` / `null` | 2026-12-26 |
+
 ## 频率限制
 
 | 范围 / 接口 | 限制 |
@@ -1167,7 +1267,9 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 | **每个网络地址（总计）** | 每分钟 120 次左右（不含贴纸素材） |
 | **贴纸素材（`/stickers`）** | 每个网络地址每分钟 **600 次**，单独计算 |
 | **轮询提醒（`/me/notifications`）** | 每个授权两次之间**至少 25 秒**，建议按返回的 `every`（60 秒）；只在 VRChat 开着时问 |
-| **最近的提醒、星轨相交、互相连上、所在的地图、我打过分的地图** | 五个接口加起来每个授权每天 **1000 次**（各客户端分开算） |
+| **读，第一份** | 最近的提醒、星轨相交、互相连上、所在的地图、我打过分的地图：每个授权每天 **1000 次**（各客户端分开算） |
+| **读，第二份**（和上面分开算） | 今天的星、连向我、私聊列表和记录、星友圈、评论、玩家照片、地图榜和地图页、全部介绍、隐藏列表：每个授权每天 **1000 次**。签名图片每打开一次也算一次，所以一张玩家照片是两次（拿链接一次、打开一次） |
+| **没有每天上限的** | `me/card`；轮询提醒（只有 25 秒间隔）；开放数据 |
 | **设备授权拿码（`/device/code`）** | 每个网络地址每天 **30 个** |
 | **设备授权换令牌（`/device/token`）** | 按返回的 `interval`（5 秒）问一次 |
 | **玩家点同意（设备授权）** | 每位玩家每天 **30 次** |
@@ -1175,7 +1277,7 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 | **用星遇同频登录（玩家点「继续」）** | 每位玩家每天 **100 次** |
 | **打分（`/me/maps/{world}/rating`）** | 和网页地图榜共用每天的打分与添图次数 |
 | **开放数据（地图榜）** | 服务器最多 **5 分钟**更新一次，问得再勤也是同一份 |
-| **网页上的动作，每个令牌每天** | 读（今天的星、连向我、私聊列表和记录、星友圈）加起来 **1000 次**；连线 **20 次**；私聊 **100 条**；发星友圈 **5 条**。网页自己的上限照样算 |
+| **写，每个授权每天** | 连线和说一句合计 **20**；私聊和撤回合计 **100**；发星友圈 **5**；各种举报合计 **10**；隐藏和恢复合计 **50**；评论 **50**；点亮 **200**；各种删除和合照合计 **50**；地图赞踩 **200**；添加地图 **10**；写介绍 **10**。网页自己的上限照样算 |
 
 ---
 
