@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.12.0"
+  version: "1.13.0"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -27,8 +27,8 @@ info:
     | `card` | 查看你的星卡（星群、介绍和成分） | `GET /me/card` | | |
     | `maps` | 查看你在地图榜的评分和短评 | `GET /me/maps`、`GET /me/maps/{world}` | ✓ | |
     | `maps.rate` | 在你操作时，为地图打分 | `POST /me/maps/{world}/rating`、`…/rating/delete` | ✓ | ✓ |
-    | `notifications` | 接收你的星遇同频提醒 | `GET /me/notifications`、`GET /me/notifications/recent` | ✓ | |
-    | `crossings` | 查看你的「星轨相交」 | `GET /me/crossings` | ✓ | ✓ |
+    | `notifications` | 接收你的星遇同频提醒 | `GET /me/notifications`、`GET /me/notifications/recent`、`GET /me/notes`、`GET /me/unread` | ✓ | |
+    | `crossings` | 查看你的「星轨相交」 | `GET /me/crossings`、`GET /me/crossings/cards` | ✓ | ✓ |
     | `mutuals` | 查看与你互相连上的星和他们的 VRChat 名字 | `GET /me/mutuals` | ✓ | ✓ |
     | `today` | 查看今天路过你的星（会看到其他玩家的资料） | `GET /me/today` | | ✓ |
     | `inbox` | 查看连向你的星（会看到其他玩家的资料） | `GET /me/inbox` | | ✓ |
@@ -135,7 +135,7 @@ tags:
   - name: "玩家个人数据"
     description: |
       需同时携带 `X-Client: <标识>` 与 `Authorization: Bearer <令牌>` 请求头（令牌严禁放入 URL），且令牌须有对应权限（否则 `403 scope`）。
-      用于拉取实时提醒、查看星轨相交与互相连上的星友、查看星卡与地图评分、给当前所在的 VRChat 地图打分、查看仓库里的贴纸和星尘、查看我的资料和隐私设置。
+      用于拉取实时提醒、查看星轨相交与互相连上的星友、查看星卡与地图评分、给当前所在的 VRChat 地图打分、查看仓库里的贴纸和星尘、查看我的资料和隐私设置、看通知中心和未读数。
   - name: "网页上的动作"
     description: |
       今天的星、连向我、连线、私聊、星友圈：与网页执行同一个动作，网页的规则与上限原样适用（只能连今天这一轮等网页允许的星、只能和互相连上的人私聊、发言检查、16–17 岁与 18 岁以上分开等），回答与网页相同。这里列出主要字段：没列出的是网页自己用的，可能变化或去掉，不要依赖。完整示例见仓库的 examples/responses.json。
@@ -170,6 +170,13 @@ paths:
             minimum: 1
             maximum: 100
             default: 20
+        - name: sort
+          in: query
+          description: "top 总榜（默认）；week 本周榜（周一零点以后有人打分的，按总榜顺序，每张带 week）；new 新上榜（最新加的在前，含未评分的）。别的值返回 400（1.13.0 起）"
+          schema:
+            type: string
+            enum: [top, week, new]
+            default: top
         - name: client
           in: query
           description: "客户端标识（仅在无法发送 X-Client 请求头时使用，例如 VRChat Udon）"
@@ -189,6 +196,10 @@ paths:
                     type: string
                     const: "maps"
                     description: "榜单标识"
+                  sort:
+                    type: string
+                    enum: [top, week, new]
+                    description: "这次用的排序（1.13.0 起）"
                   min:
                     type: integer
                     description: "有名次所需的最少评分人数"
@@ -708,6 +719,90 @@ paths:
         default:
           $ref: "#/components/responses/Error"
 
+  /me/notes:
+    get:
+      tags: ["玩家个人数据"]
+      summary: "通知中心"
+      operationId: getMyNotes
+      description: |
+        **需要权限 `notifications`。**（1.13.0 起）
+
+        网页「通知」那张表，最多 60 条，新的在前。**读了不会标已读**。只有和别的星、星友圈、地图榜、仓库、自己星卡有关的几类；账号和 VRChat 验证、星池、星搭、第三方客户端、管理员的通知不在这里。送礼物的通知里送礼人换成「一颗互相连上的星」。
+      security:
+        - client: []
+          token: []
+      responses:
+        "200":
+          description: "通知"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [notes]
+                properties:
+                  notes:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, kind, text, at, seen, post, world]
+                      properties:
+                        id: { type: integer }
+                        kind: { type: string, description: "link 有星连了你、mutual 互相连上、gift 礼物和奖励、invite 朋友用了你的口令、yq 星友圈、map 地图榜、about 关于我的检查、photo 模型截图的审核；以后可能加新的" }
+                        text: { type: string, description: "网页上显示的那句话（纯文字）" }
+                        at: { type: integer }
+                        seen: { type: boolean, description: "玩家在网页上看过没有" }
+                        post: { type: [integer, "null"], description: "点开去的星友圈动态编号" }
+                        world: { type: [string, "null"], description: "点开去的地图" }
+              example:
+                notes:
+                  - { id: 2, kind: "yq", text: "有颗星在你的星友圈动态下留了言。", at: 1792830000000, seen: false, post: 1, world: null }
+                  - { id: 1, kind: "gift", text: "一颗互相连上的星送了你一件礼物，在「我的仓库」里。", at: 1792830000000, seen: false, post: null, world: null }
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /me/unread:
+    get:
+      tags: ["玩家个人数据"]
+      summary: "未读数"
+      operationId: getMyUnread
+      description: |
+        **需要权限 `notifications`。**（1.13.0 起）
+
+        网页上几个红点的数字，给托盘图标用。**读了不会标已读**。每个授权每天 1500 次，建议 1–2 分钟问一次。
+      security:
+        - client: []
+          token: []
+      responses:
+        "200":
+          description: "未读数"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [inbox, cross, chats, notes]
+                properties:
+                  inbox: { type: integer, description: "上次看「连向我」以后，新连向玩家的星" }
+                  cross: { type: integer, description: "星轨相交里还没看过的" }
+                  chats: { type: integer, description: "私聊未读的消息" }
+                  notes: { type: integer, description: "通知中心里未读的（只算 /me/notes 给的那几类）" }
+              example: { inbox: 1, cross: 1, chats: 2, notes: 3 }
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        '429':
+          $ref: "#/components/responses/RateLimitError"
+        default:
+          $ref: "#/components/responses/Error"
+
   /me/crossings:
     get:
       tags: ["玩家个人数据"]
@@ -804,6 +899,56 @@ paths:
                       - `gone` / `friend`：玩家在 VRChat 内删除了机器人好友，或尚未开启机器人好友
                   me:
                     $ref: "#/components/schemas/Me"
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /me/crossings/cards:
+    get:
+      tags: ["网页上的动作"]
+      summary: "星轨相交的完整星卡"
+      operationId: getCrossCards
+      description: |
+        **需要权限 `crossings`。**（1.13.0 起）与网页「连向我 → 星轨相交」相同（网页动作 `cross`）：完整星卡，加上今天还能从这里连几颗。只有带 `?mark=1` 才标成看过。算第二份读的次数。
+      security:
+        - client: []
+          token: []
+      parameters:
+        - name: mark
+          in: query
+          description: "1 表示玩家看过了（星轨相交的未读消掉）；不带不改"
+          schema:
+            type: string
+            enum: ["1"]
+      responses:
+        "200":
+          description: "星轨相交的星卡"
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                required: [cards, seen, left, max]
+                properties:
+                  cards:
+                    type: array
+                    description: "星卡；linkedMe 是 TA 已连向我，at 是最近一次擦肩的时间"
+                    items:
+                      $ref: "#/components/schemas/StarCard"
+                  seen:
+                    type: integer
+                    description: "上次看过时最新那次擦肩的时间；at 比它新的就是新的"
+                  left:
+                    type: integer
+                    description: "今天还能从星轨相交连几颗"
+                  max:
+                    type: integer
+                    description: "每天最多几颗"
         '401':
           $ref: "#/components/responses/AuthError"
         '403':
@@ -3463,6 +3608,81 @@ paths:
           description: "材质、磨损或种子不对"
         "404":
           description: "没有这张贴纸"
+  /maps/{world}/page:
+    get:
+      tags: ["开放数据 · 地图榜"]
+      summary: "公开地图页"
+      operationId: getMapPage
+      description: |
+        和 vrcc.cc/maps/<地图> 页面上一样（1.13.0 起）：榜上那一行、分数分布、去过的人数、房间上限、多小咕实测。短评和介绍不给，热评就是 `map.hot`（署名「某位…」）。不在榜上或未过审返回 `404 not_found`。服务器最多 5 分钟更新一次；任何网页都能直接读，也支持 `HEAD`。
+      security:
+        - client: []
+        - clientQuery: []
+      parameters:
+        - name: world
+          in: path
+          required: true
+          description: "VRChat 世界 ID（仅 wrld_…）"
+          schema:
+            $ref: "#/components/schemas/World"
+        - name: client
+          in: query
+          description: "客户端标识（仅在无法发送 X-Client 请求头时使用）"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "地图页"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [map, spread, went, cap, perf, at]
+                properties:
+                  map:
+                    $ref: "#/components/schemas/BoardMap"
+                  spread:
+                    type: array
+                    description: "9–10、7–8、5–6、3–4、1–2 分各占百分之几（整数）"
+                    items:
+                      type: object
+                      properties:
+                        from: { type: integer, example: 9 }
+                        to: { type: integer, example: 10 }
+                        pct: { type: integer, example: 50 }
+                  went:
+                    type: integer
+                    description: "去过的人数"
+                    example: 1
+                  cap:
+                    type: [integer, "null"]
+                    description: "房间人数上限"
+                    example: 16
+                  perf:
+                    type: [object, "null"]
+                    description: "多小咕实测，没测过为 null；没有的项为 null 或 []"
+                    properties:
+                      from: { type: string, enum: [test, hang], description: "test 实测（地图本身的占用）；hang 挂房时的平均" }
+                      weight: { type: [string, "null"], enum: [light, mid, heavy, null] }
+                      vram: { type: [number, "null"], description: "显存（MB）" }
+                      mem: { type: [number, "null"], description: "内存（MB）" }
+                      load: { type: [number, "null"], description: "加载时间（毫秒）" }
+                      size: { type: [number, "null"], description: "下载大小（字节）" }
+                      platforms: { type: array, items: { type: string, enum: [PC, Quest, iOS] } }
+                      minutes: { type: [integer, "null"], description: "挂房的分钟数（实测时为 null）" }
+                  at:
+                    type: integer
+                    example: 1792830000000
+        "404":
+          description: "地图不在榜上（not_found）"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+        "403":
+          $ref: "#/components/responses/ClientError"
+        default:
+          $ref: "#/components/responses/Error"
   /announcements:
     get:
       tags: ["开放数据"]
@@ -4133,8 +4353,8 @@ components:
             card: "查看你的星卡（星群、介绍和成分）：GET /me/card"
             maps: "查看你在地图榜的评分和短评：GET /me/maps、GET /me/maps/{world}"
             maps.rate: "在你操作时，为地图打分：POST /me/maps/{world}/rating"
-            notifications: "接收你的星遇同频提醒：GET /me/notifications、/me/notifications/recent"
-            crossings: "查看你的「星轨相交」：GET /me/crossings"
+            notifications: "接收你的星遇同频提醒：GET /me/notifications、/me/notifications/recent、/me/notes、/me/unread"
+            crossings: "查看你的「星轨相交」：GET /me/crossings、/me/crossings/cards"
             mutuals: "查看与你互相连上的星和他们的 VRChat 名字：GET /me/mutuals"
             today: "查看今天路过你的星（会看到其他玩家的资料）：GET /me/today"
             inbox: "查看连向你的星（会看到其他玩家的资料）：GET /me/inbox"
@@ -4647,6 +4867,9 @@ components:
       type: object
       required: [world, name, author, avg, raters, rank, weight, page, img]
       properties:
+        week:
+          type: integer
+          description: "只在 boards/maps?sort=week 时有：本周几人打分（1.13.0 起）"
         world:
           $ref: "#/components/schemas/World"
         name:

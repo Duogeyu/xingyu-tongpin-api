@@ -35,9 +35,10 @@
 
 | 分类 | 方法 | 路径 | 认证 | 说明 |
 | --- | --- | --- | --- | --- |
-| **地图榜** | `GET` | [`/api/v1/boards/maps`](#排行get-apiv1boardsmapslimit20) | `client` | 地图榜总榜排行（有评分的地图，按名次排，`limit` 1–100） |
+| **地图榜** | `GET` | [`/api/v1/boards/maps`](#排行get-apiv1boardsmapslimit20) | `client` | 地图榜排行：总榜（有评分的地图，按名次排）、`sort=week` 本周榜、`sort=new` 新上榜，`limit` 1–100 |
 | **地图榜** | `GET` | [`/api/v1/maps`](#查几张地图get-apiv1mapsidswrld_wrld_) | `client` | 按世界 ID 批量查几张地图（最多 20 张，只返回在榜上的） |
 | **地图榜** | `GET` | [`/api/v1/maps/{world}`](#查一张地图get-apiv1mapsworld) | `client` | 查单张地图在地图榜上的数据 |
+| **地图榜** | `GET` | [`/api/v1/maps/{world}/page`](#公开地图页get-apiv1mapsworldpage) | `client` | 和公开地图页一样：分数分布、去过的人数、房间上限、多小咕实测 |
 | **公告** | `GET` | [`/api/v1/announcements`](#公告和停站) | `client` | 网页上给所有玩家的公告，和停站时的说明 |
 | **素材** | `GET` | [`/api/v1/stickers`](#贴纸素材) | 无 | 所有贴纸的名字、材质和图片地址 |
 | **素材** | `GET` | [`/api/v1/stickers/{id}`](#一张贴纸get-apiv1stickersidfinwearseed) | 无 | 一张贴纸的图（SVG），按材质、磨损画 |
@@ -47,7 +48,10 @@
 | **连接** | `POST` | [`/api/v1/disconnect`](#断开post-apiv1disconnect) | `client` + `Bearer` | 断开这个客户端，令牌立刻失效 |
 | **玩家本人** | `GET` | [`/api/v1/me/notifications`](#提醒get-apiv1menotificationssincelast) | `client` + `Bearer`（`notifications`） | 轮询新提醒与星轨相交未读红点（建议每 60 秒一次） |
 | **玩家本人** | `GET` | [`/api/v1/me/notifications/recent`](#最近的提醒get-apiv1menotificationsrecentmark1) | `client` + `Bearer`（`notifications`） | 最近一天的最后 5 条提醒（带页面跳转路径，支持标已读） |
+| **玩家本人** | `GET` | [`/api/v1/me/notes`](#通知中心get-apiv1menotes) | `client` + `Bearer`（`notifications`） | 网页「通知」那张表（读了不标已读） |
+| **玩家本人** | `GET` | [`/api/v1/me/unread`](#未读数get-apiv1meunread) | `client` + `Bearer`（`notifications`） | 连向我、星轨相交、私聊、通知各有几条未读 |
 | **玩家本人** | `GET` | [`/api/v1/me/crossings`](#星轨相交get-apiv1mecrossingsmark1) | `client` + `Bearer`（`crossings`） | 「星轨相交」擦肩列表（支持标已读消红点） |
+| **玩家本人** | `GET` | [`/api/v1/me/crossings/cards`](#星轨相交的完整星卡get-apiv1mecrossingscardsmark1) | `client` + `Bearer`（`crossings`） | 网页「星轨相交」那一页的完整星卡和今天还能连几颗 |
 | **玩家本人** | `GET` | [`/api/v1/me/mutuals`](#互相连上get-apiv1memutuals) | `client` + `Bearer`（`mutuals`） | 「互相连上」的星列表（含对方的 VRChat 名字与可选用户 ID） |
 | **玩家本人** | `GET` | [`/api/v1/me/card`](#我的星卡get-apiv1mecard) | `client` + `Bearer`（`card`） | 玩家自己的星卡：星位、星群、成分、介绍 |
 | **玩家本人** | `GET` | [`/api/v1/me/bag`](#我的贴纸和星尘get-apiv1mebag) | `client` + `Bearer`（`bag`） | 仓库里的贴纸和星尘余额 |
@@ -245,8 +249,8 @@ sequenceDiagram
 | `card` | 查看你的星卡（星群、介绍和成分） | `GET me/card` | | |
 | `maps` | 查看你在地图榜的评分和短评 | `GET me/maps`、`GET me/maps/{world}` | ✓ | |
 | `maps.rate` | 在你操作时，为地图打分 | `POST me/maps/{world}/rating`、`POST me/maps/{world}/rating/delete` | ✓ | ✓ |
-| `notifications` | 接收你的星遇同频提醒 | `GET me/notifications`、`GET me/notifications/recent` | ✓ | |
-| `crossings` | 查看你的「星轨相交」 | `GET me/crossings` | ✓ | ✓ |
+| `notifications` | 接收你的星遇同频提醒 | `GET me/notifications`、`GET me/notifications/recent`、`GET me/notes`、`GET me/unread` | ✓ | |
+| `crossings` | 查看你的「星轨相交」 | `GET me/crossings`、`GET me/crossings/cards` | ✓ | ✓ |
 | `mutuals` | 查看与你互相连上的星和他们的 VRChat 名字 | `GET me/mutuals` | ✓ | ✓ |
 | `today` | 查看今天路过你的星（会看到其他玩家的资料） | `GET me/today` | | ✓ |
 | `inbox` | 查看连向你的星（会看到其他玩家的资料） | `GET me/inbox` | | ✓ |
@@ -358,9 +362,12 @@ sequenceDiagram
 
 返回**有评分**的地图，按总榜名次排，`limit` 取值 `1–100`（默认 `20`；不是数字或是 `0` 时按 `20`，超过 `100` 按 `100`）。名次怎么算见下面「名次怎么算」。
 
+`sort`（1.13.0 起）：不写或 `top` 是总榜；`week` 是本周榜（北京时间周一零点以后有人打分的地图，按总榜的顺序，每张多一个 `week`：本周几人打分）；`new` 是新上榜（所有地图，最新加的在前，还没评分的 `rank` 是 `null`）。别的值返回 `400 bad_request`。和网页地图榜的「总榜」「本周」「新上榜」一样，只是不分星池。
+
 ```json
 {
   "board": "maps",
+  "sort": "top",
   "min": 1,
   "at": 1792830000000,
   "maps": [
@@ -382,6 +389,7 @@ sequenceDiagram
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
 | `board` | `string` | 固定为 `"maps"` |
+| `sort` | `string` | 这次用的排序：`top`、`week` 或 `new`（1.13.0 起） |
 | `min` | `integer` | 有名次最少需要几人评分（当前为 `1`） |
 | `at` | `integer` | 这份榜单快照生成的时间（毫秒时间戳） |
 | `maps[].world` | `string` | VRChat 世界 ID（`wrld_…`） |
@@ -394,6 +402,7 @@ sequenceDiagram
 | `maps[].page` | `string` | 地图在星遇同频地图榜上的详情页网址 |
 | `maps[].img` | `string \| null` | 封面图网址 |
 | `maps[].hot` | `object \| null` | 热评：最热的一条短评 `{text, by, up, went}`，`by` 是「某位<星位>」，`went` 是写的人去过这张图；没有时是 `null` |
+| `maps[].week` | `integer` | 只在 `sort=week` 时有：本周几人打分（网页上的「本周 N」） |
 
 ### 名次怎么算
 
@@ -414,6 +423,38 @@ sequenceDiagram
 
 - 回答 `{"map": {…}, "at": 1792830000000}`，字段同上。
 - 如果地图不在榜上或未通过审核，返回 `404`（`{"error": "not_found"}`）。
+
+### 公开地图页：`GET /api/v1/maps/{world}/page`
+
+和 [vrcc.cc/maps/](https://vrcc.cc/maps/) 上每张地图的页面一样（1.13.0 起）。适合在 VRChat 世界里放一块「这张图在星遇同频的评价」。
+
+```json
+{
+  "map": { "world": "wrld_…", "name": "地图名", "avg": 8.5, "raters": 2, "rank": 1, "weight": "mid", "hot": { "text": "光影很舒服", "by": "某位彩蛋猎人", "up": 0, "went": false }, "…": "…" },
+  "spread": [
+    { "from": 9, "to": 10, "pct": 50 },
+    { "from": 7, "to": 8, "pct": 50 },
+    { "from": 5, "to": 6, "pct": 0 },
+    { "from": 3, "to": 4, "pct": 0 },
+    { "from": 1, "to": 2, "pct": 0 }
+  ],
+  "went": 1,
+  "cap": 16,
+  "perf": { "from": "test", "weight": "mid", "vram": 900, "mem": 1300, "load": 8200, "size": 104857600, "platforms": ["PC", "Quest"], "minutes": null },
+  "at": 1792830000000
+}
+```
+
+| 字段 | 说明 |
+| --- | --- |
+| `map` | 榜上那一行，和 `maps/{world}` 的 `map` 一样 |
+| `spread` | 分数分布：9–10、7–8、5–6、3–4、1–2 分各占百分之几（整数，和网页上的条一样） |
+| `went` | 去过的人数（星遇同频的机器人看到 TA 在这张图待过） |
+| `cap` | 房间人数上限，不知道时是 `null` |
+| `perf` | 多小咕实测，没测过是 `null`。`from`：`test` 实测（地图本身的占用）或 `hang` 挂房时的平均；`weight` 轻重（`light` / `mid` / `heavy`）；`vram`、`mem` 显存和内存（MB）；`load` 加载时间（毫秒）；`size` 下载大小（字节）；`platforms` 支持的平台（`PC`、`Quest`、`iOS`）；`minutes` 挂房的分钟数（实测时是 `null`）。没有的项是 `null` 或 `[]` |
+
+- 短评和介绍不给（只有星遇同频里才看得到），热评就是 `map.hot`，署名「某位…」。
+- 不在榜上或没通过审核返回 `404 not_found`。服务器最多 5 分钟更新一次。
 
 ---
 
@@ -651,6 +692,51 @@ sequenceDiagram
 
 ---
 
+### 通知中心：`GET /api/v1/me/notes`
+
+需要权限 `notifications`。网页「通知」那张表，最多 60 条，新的在前（1.13.0 起）。**读了不会标已读**。
+
+```json
+{
+  "notes": [
+    { "id": 3, "kind": "map", "text": "你刚去了「星夜茶馆」，给它打个分吧。", "at": 1792830000000, "seen": true, "post": null, "world": "wrld_…" },
+    { "id": 2, "kind": "yq", "text": "有颗星在你的星友圈动态下留了言。", "at": 1792830000000, "seen": false, "post": 1, "world": null },
+    { "id": 1, "kind": "gift", "text": "一颗互相连上的星送了你一件礼物，在「我的仓库」里。", "at": 1792830000000, "seen": false, "post": null, "world": null }
+  ]
+}
+```
+
+| 字段 | 说明 |
+| --- | --- |
+| `kind` | `link` 有星连了你、`mutual` 互相连上、`gift` 礼物和奖励、`invite` 朋友用了你的口令、`yq` 星友圈、`map` 地图榜、`about` 关于我的检查、`photo` 模型截图的审核。以后可能加新的，不认识的照样显示 `text` |
+| `text` | 网页上显示的那句话（纯文字） |
+| `seen` | 玩家在网页上看过没有 |
+| `post` / `world` | 点开去的星友圈动态编号 / 地图，没有时是 `null` |
+
+- 只有上面这几类。账号和 VRChat 验证、星池、星搭、第三方客户端、管理员的通知不在这里。
+- 送礼物的通知在网页上写着对方的 VRChat 名字，这里换成「一颗互相连上的星」。
+
+---
+
+### 未读数：`GET /api/v1/me/unread`
+
+需要权限 `notifications`。网页上几个红点的数字，给托盘图标用（1.13.0 起）。**读了不会标已读**。
+
+```json
+{ "inbox": 1, "cross": 1, "chats": 2, "notes": 3 }
+```
+
+| 字段 | 说明 |
+| --- | --- |
+| `inbox` | 玩家上次看「连向我」以后，新连向 TA 的星 |
+| `cross` | 星轨相交里还没看过的 |
+| `chats` | 私聊未读的消息 |
+| `notes` | 通知中心里未读的（只算 `me/notes` 给的那几类） |
+
+- 每个授权每天 1500 次，建议 1–2 分钟问一次，只在客户端开着时问。
+
+---
+
 ### 星轨相交：`GET /api/v1/me/crossings[?mark=1]`
 
 需要权限 `crossings`。和网页「连向我 → 星轨相交」一样的列表。带 `?mark=1` 表示玩家看过了，未读红点消掉。
@@ -693,6 +779,26 @@ sequenceDiagram
 | `stars[].linked` / `mutual` | 我是否已连向 TA / 双方是否已互相连上 |
 | `stars[].fresh` | 是否为还没看过的新相交记录 |
 | `why` | 为何不可用或为空：<br>• `null`：正常<br>• `hide`：不给这位玩家看（**此时客户端不要显示这一整块**）<br>• `verify`：还没验证 VRChat 账号<br>• `wait`：VRChat 账号验证中<br>• `queued` / `sent`：机器人的好友请求排队中 / 已发出，等玩家在 VRChat 里同意<br>• `gone` / `friend`：玩家删了或关了机器人好友 |
+
+---
+
+### 星轨相交的完整星卡：`GET /api/v1/me/crossings/cards[?mark=1]`
+
+需要权限 `crossings`。网页「连向我 → 星轨相交」那一页，和网页的回答一样：完整的星卡，加上今天还能从这里连几颗（1.13.0 起）。只有带 `?mark=1` 才标成看过。
+
+```json
+{
+  "cards": [{ "n": 3, "name": "彩蛋猎人", "group": "G", "why": "cross", "linked": false, "mutual": false, "linkedMe": true, "at": 1792830000000 }],
+  "seen": 0,
+  "left": 5,
+  "max": 5
+}
+```
+
+- `cards`：星卡的主要字段见「[网页上的动作](#网页上的动作)」；`linkedMe` 是 TA 已经连向我，`at` 是最近一次擦肩的时间。
+- `seen`：上次看过时最新那次擦肩的时间，`at` 比它新的就是新的。
+- `left` / `max`：今天还能从星轨相交连几颗 / 每天最多几颗。
+- 算第二份读的次数。
 
 ---
 
@@ -1367,6 +1473,7 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 | `boards/maps` | `?limit=`（1–100） | 100 |
 | `me/inbox`、`me/mutuals`、`me/maps` | 不能翻页 | 200 |
 | `me/hidden` | 不能翻页 | 300 |
+| `me/notes` | 不能翻页 | 60 |
 
 ## 弃用中
 
@@ -1389,8 +1496,9 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 | **贴纸素材（`/stickers`）** | 每个网络地址每分钟 **600 次**，单独计算 |
 | **轮询提醒（`/me/notifications`）** | 每个授权两次之间**至少 25 秒**，建议按返回的 `every`（60 秒）；只在 VRChat 开着时问 |
 | **读，第一份** | 最近的提醒、星轨相交、互相连上、所在的地图、我打过分的地图：每个授权每天 **1000 次**（各客户端分开算） |
-| **读，第二份**（和上面分开算） | 今天的星、连向我、私聊列表和记录、星友圈、评论、玩家照片、地图榜和地图页、全部介绍、隐藏列表：每个授权每天 **1000 次**。签名图片每打开一次也算一次，所以一张玩家照片是两次（拿链接一次、打开一次） |
-| **没有每天上限的** | `me/card`；轮询提醒（只有 25 秒间隔）；开放数据 |
+| **读，第二份**（和上面分开算） | 今天的星、连向我、星轨相交的完整星卡、私聊列表和记录、星友圈、评论、玩家照片、地图榜和地图页、全部介绍、隐藏列表、通知中心：每个授权每天 **1000 次**。签名图片每打开一次也算一次，所以一张玩家照片是两次（拿链接一次、打开一次） |
+| **未读数（`/me/unread`）** | 每个授权每天 **1500 次**，单独计算 |
+| **没有每天上限的** | `me/card`、`me/bag`、`me/settings`；轮询提醒（只有 25 秒间隔）；开放数据 |
 | **设备授权拿码（`/device/code`）** | 每个网络地址每天 **30 个** |
 | **设备授权换令牌（`/device/token`）** | 按返回的 `interval`（5 秒）问一次 |
 | **玩家点同意（设备授权）** | 每位玩家每天 **30 次** |
