@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.13.0"
+  version: "1.14.0"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -50,7 +50,7 @@ info:
     - 未审核的自助登记应用：敏感权限只有登记人本人的账号能同意（用于开发测试）；其他玩家同意时返回 `403 scope_unreviewed`（取消照常带 `access_denied` 返回）。同意页注明「玩家自行登记，未经星遇同频审核」，玩家的列表中标「未审核」。
     - `dev-` 标识：只能要普通权限，省略时为 `profile notifications maps`（连接码同此）；要敏感权限时 `POST /device/code` 返回 `403 scope_unreviewed`。开发敏感功能请自助登记一个应用，用登记人账号测试。
     - 每次调用都会重新检查：审核被撤回后，敏感接口立即返回 `403 scope_unreviewed`，`/oauth/userinfo` 的 `vrc` 变为 `null`；普通接口照常。
-    - 申请审核：「我的资料 → 第三方客户端 → 我登记的应用 → 申请审核」，填写做什么用、源码地址（客户端必须开源）、会怎么用玩家的数据；结果以邮件和站内通知告知；修改已通过的应用会回到未审核。
+    - 申请审核：「我的资料 → 第三方客户端 → 我登记的应用 → 申请审核」，填写做什么用、源码地址（客户端必须开源）、会怎么用玩家的数据、版本（1.14.0 起必填）；结果以邮件和站内通知告知；修改已通过的应用会回到未审核。审核通过的是申请时写的版本，多要敏感权限、改了数据用法、换了源码地址等大改，要修改应用后用新版本号重新申请。
     - 账号操作（改资料、注销等）不在接口中，以后也不会提供。
     - 同意页列出所要的每一项，顶上写普通权限与敏感权限各几项；敏感权限（`vrchat` `maps.rate` `crossings` `mutuals` `today` `inbox` `link` `chat` `chat.send` `posts` `posts.write` `photos` `maps.write` `safety`）排在前面并标「敏感」；超过三项的先收起，可展开。玩家不能逐项取消：请只要用得到的权限。
 
@@ -84,7 +84,8 @@ info:
 
     - **原生程序 / 脚本**（Node.js、Rust、Python、C#、VRChat Udon 等）：直接发起请求，不受浏览器同源策略限制。
     - **开放数据与 `/status`**：任何网页都能直接读（`Access-Control-Allow-Origin: *`），可带 `X-Client`；也支持 `HEAD`。
-    - **方法**：路径对、方法不对返回 `405 method`，`Allow` 头列出可用方法。页面能读到的响应头：`Retry-After`、`RateLimit-Limit`、`RateLimit-Remaining`、`RateLimit-Reset`（带每天次数的接口才有，`Reset` 是到北京时间零点的秒数）。
+    - **方法**：路径对、方法不对返回 `405 method`，`Allow` 头列出可用方法。页面能读到的响应头：`Retry-After`、`RateLimit-Limit`、`RateLimit-Remaining`、`RateLimit-Reset`（带每天次数的接口才有，`Reset` 是到北京时间零点的秒数）、`Deprecation`、`Sunset`。
+    - **兼容和弃用**（1.14.0 写明）：v1 里只做加法，客户端要忽略不认识的字段，不认识的错误码按状态码处理。要删、要改的先标弃用，至少再留 60 天；这期间带着弃用字段的回答有 `Deprecation`（RFC 9745，`@1792857600` 即 2026-10-27 北京时间零点）、`Sunset`（RFC 8594，最早停的那个字段的日子）和 `Link: <…>; rel="deprecation"`，字段上标 `deprecated: true`。
     - **桌面客户端内置页面**（如 Tauri）：仅允许 `tauri://localhost`、`http(s)://tauri.localhost`、`null`（本地文件页面）以及开发时的 `http://localhost` / `http://127.0.0.1` 读取响应；普通外部网站无法跨域调用。
     - **`/oauth/token` 与 `/oauth/userinfo`**：允许任何来源跨域调用（`Access-Control-Allow-Origin: *`），且不需要 `X-Client`。
     - **网站调用 `/me/…`**：普通网站的网页跨域读不到，请从网站服务器发起，`X-Client` 填网站的 `client_id`。
