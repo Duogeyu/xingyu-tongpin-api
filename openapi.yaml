@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.8.4"
+  version: "1.8.5"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -149,7 +149,7 @@ paths:
       summary: "获取地图榜排行"
       operationId: getMapsBoard
       description: |
-        返回已通过审核且**满 5 人评分**的上榜地图，按总榜名次从高到低排列。
+        返回已通过审核且**有评分**的上榜地图，按总榜名次从高到低排列。名次按排名分：`(3 × 7 + Σ 权重 × 分) ÷ (3 + Σ 权重)`（权重：去过 1、验证了 VRChat 0.75、其他 0.5、地图作者自己 0），同分评分人数多的在前；`avg` 是普通平均分，所以 `avg` 高的图可能排在 `avg` 低的后面。
         适合用于 VRChat 世界内的排行榜展板、社区网站或机器人。
       security:
         - client: []
@@ -184,8 +184,8 @@ paths:
                     description: "榜单标识"
                   min:
                     type: integer
-                    description: "上总榜所需的最少评分人数"
-                    example: 5
+                    description: "有名次所需的最少评分人数"
+                    example: 1
                   at:
                     type: integer
                     description: "榜单快照生成时间（毫秒时间戳）"
@@ -199,7 +199,7 @@ paths:
                   summary: "地图榜前 2 名示例"
                   value:
                     board: "maps"
-                    min: 5
+                    min: 1
                     at: 1792830000000
                     maps:
                       - world: "wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd"
@@ -234,7 +234,7 @@ paths:
       operationId: getMapsByIds
       description: |
         按逗号分隔的 VRChat 世界 ID（`wrld_…`）批量查询地图信息，**一次最多 20 张**。
-        响应中只包含已在地图榜上通过审核的地图（未上榜的不出现在 `maps` 数组中，若评分不满 5 人则 `rank` 为 `null`）。
+        响应中只包含已在地图榜上通过审核的地图（未上榜的不出现在 `maps` 数组中，还没人评分的 `rank` 为 `null`）。
       security:
         - client: []
         - clientQuery: []
@@ -2581,7 +2581,7 @@ components:
           example: 18
         rank:
           type: [integer, "null"]
-          description: "总榜名次（不满 5 人评分时为 null）"
+          description: "总榜名次（还没人评分时为 null）"
           example: 1
         weight:
           type: [string, "null"]

@@ -32,7 +32,7 @@
 
 | 分类 | 方法 | 路径 | 认证 | 说明 |
 | --- | --- | --- | --- | --- |
-| **地图榜** | `GET` | [`/api/v1/boards/maps`](#排行get-apiv1boardsmapslimit20) | `client` | 地图榜总榜排行（满 5 人评分，按名次排，`limit` 1–100） |
+| **地图榜** | `GET` | [`/api/v1/boards/maps`](#排行get-apiv1boardsmapslimit20) | `client` | 地图榜总榜排行（有评分的地图，按名次排，`limit` 1–100） |
 | **地图榜** | `GET` | [`/api/v1/maps`](#查几张地图get-apiv1mapsidswrld_wrld_) | `client` | 按世界 ID 批量查几张地图（最多 20 张，只返回在榜上的） |
 | **地图榜** | `GET` | [`/api/v1/maps/{world}`](#查一张地图get-apiv1mapsworld) | `client` | 查单张地图在地图榜上的数据 |
 | **素材** | `GET` | [`/api/v1/stickers`](#贴纸素材) | 无 | 所有贴纸的名字、材质和图片地址 |
@@ -303,12 +303,12 @@ sequenceDiagram
 
 ### 排行：`GET /api/v1/boards/maps?limit=20`
 
-返回**满 5 人评分**的地图，按总榜名次排，`limit` 取值 `1–100`（默认 `20`）。
+返回**有评分**的地图，按总榜名次排，`limit` 取值 `1–100`（默认 `20`）。名次怎么算见下面「名次怎么算」。
 
 ```json
 {
   "board": "maps",
-  "min": 5,
+  "min": 1,
   "at": 1792830000000,
   "maps": [
     {
@@ -329,17 +329,27 @@ sequenceDiagram
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
 | `board` | `string` | 固定为 `"maps"` |
-| `min` | `integer` | 上总榜最少需要几人评分（当前为 `5`） |
+| `min` | `integer` | 有名次最少需要几人评分（当前为 `1`） |
 | `at` | `integer` | 这份榜单快照生成的时间（毫秒时间戳） |
 | `maps[].world` | `string` | VRChat 世界 ID（`wrld_…`） |
 | `maps[].name` | `string` | 地图名 |
 | `maps[].author` | `string \| null` | 地图作者 |
 | `maps[].avg` | `number \| null` | 1–10 分的平均分（保留一位小数） |
 | `maps[].raters` | `integer` | 几人评分 |
-| `maps[].rank` | `integer \| null` | 总榜名次（不满 5 人评分时为 `null`） |
+| `maps[].rank` | `integer \| null` | 总榜名次（还没人评分时为 `null`） |
 | `maps[].weight` | `string \| null` | 多小咕实测的轻重：`light` 轻量、`mid` 中等、`heavy` 较重，没测过是 `null` |
 | `maps[].page` | `string` | 地图在星遇同频地图榜上的详情页网址 |
 | `maps[].img` | `string \| null` | 封面图网址 |
+
+### 名次怎么算
+
+和 [vrcc.cc/maps/](https://vrcc.cc/maps/)、星遇同频网页上的总榜是同一个顺序（2026-10-27 起）：
+
+- `avg` 是所有人的普通平均分。
+- 名次按「排名分」排：`(3 × 7 + Σ 权重 × 分) ÷ (3 + Σ 权重)`。每张图先算 3 份 7 分（「还行」），评分越多，这 3 份越不重要；全站平均分低于 7 时用全站平均分。
+- 权重：机器人确认去过这张图的玩家 1，验证了 VRChat 账号的 0.75，其他 0.5，地图作者给自己的图打分 0。
+- 排名分一样时评分人数多的在前。
+- 所以同样的平均分，评分人数越多名次越靠前；只有一两个评分的图，平均分再高也不会排在很前面。`avg` 高的图排在 `avg` 低的后面是正常的。
 
 ### 查几张地图：`GET /api/v1/maps?ids=wrld_…,wrld_…`
 
