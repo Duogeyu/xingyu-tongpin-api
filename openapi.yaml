@@ -28,7 +28,7 @@ info:
     | `maps` | 查看你在地图榜的评分和短评 | `GET /me/maps`、`GET /me/maps/{world}` | ✓ | |
     | `maps.rate` | 在你操作时，为地图打分 | `POST /me/maps/{world}/rating`、`…/rating/delete` | ✓ | ✓ |
     | `notifications` | 接收你的星遇同频提醒 | `GET /me/notifications`、`GET /me/notifications/recent`、`GET /me/notes`、`GET /me/unread` | ✓ | |
-    | `crossings` | 查看你的「星轨相交」 | `GET /me/crossings`、`GET /me/crossings/cards` | ✓ | ✓ |
+    | `crossings` | 查看你的「星轨相交」（会看到其他玩家的资料） | `GET /me/crossings`、`GET /me/crossings/cards` | ✓ | ✓ |
     | `mutuals` | 查看与你互相连上的星和他们的 VRChat 名字 | `GET /me/mutuals` | ✓ | ✓ |
     | `today` | 查看今天路过你的星（会看到其他玩家的资料） | `GET /me/today` | | ✓ |
     | `inbox` | 查看连向你的星（会看到其他玩家的资料） | `GET /me/inbox` | | ✓ |
@@ -173,7 +173,7 @@ paths:
             default: 20
         - name: sort
           in: query
-          description: "top 总榜（默认）；week 本周榜（周一零点以后有人打分的，按总榜顺序，每张带 week）；new 新上榜（最新加的在前，含未评分的）。别的值返回 400（1.13.0 起）"
+          description: "top 总榜（默认）；week 本周榜（周一零点以后有人打分的，只按本周的打分排，和网页「本周」一样，每张带 week）；new 新上榜（最新加的在前，含未评分的）。别的值返回 400（1.13.0 起）"
           schema:
             type: string
             enum: [top, week, new]
@@ -748,7 +748,7 @@ paths:
                       required: [id, kind, text, at, seen, post, world]
                       properties:
                         id: { type: integer }
-                        kind: { type: string, description: "link 有星连了你、mutual 互相连上、gift 礼物和奖励、invite 朋友用了你的口令、yq 星友圈、map 地图榜、about 关于我的检查、photo 模型截图的审核；以后可能加新的" }
+                        kind: { type: string, description: "link 有星连了你、mutual 互相连上、gift 礼物和奖励、invite 朋友用了你的口令、yq 星友圈、map 地图榜、about 关于我的检查；以后可能加新的。每类只给认得的那几句话，只有一个星池才会收到的（模型截图、合照、16–17 岁看不到的地图）不给" }
                         text: { type: string, description: "网页上显示的那句话（纯文字）" }
                         at: { type: integer }
                         seen: { type: boolean, description: "玩家在网页上看过没有" }
@@ -786,12 +786,12 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [inbox, cross, chats, notes]
+                required: [inbox, chats, notes]
                 properties:
                   inbox: { type: integer, description: "上次看「连向我」以后，新连向玩家的星" }
-                  cross: { type: integer, description: "星轨相交里还没看过的" }
+                  cross: { type: integer, description: "星轨相交里还没看过的。只在令牌有 crossings 时才有（16–17 岁没有星轨相交，永远是 0 就能看出星池）" }
                   chats: { type: integer, description: "私聊未读的消息" }
-                  notes: { type: integer, description: "通知中心里未读的（只算 /me/notes 给的那几类）" }
+                  notes: { type: integer, description: "通知中心里未读的：/me/notes 给的那些里还没看过的" }
               example: { inbox: 1, cross: 1, chats: 2, notes: 3 }
         '401':
           $ref: "#/components/responses/AuthError"
@@ -1150,12 +1150,9 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [photo, about, aboutState, prefs, vrcVerified, privacy]
+                description: "同样的设置，两个星池的回答一模一样：只有一个星池才有的（模型截图、个人主页、个人主页上的 VRChat 资料、星轨相交、常在线时间里的寒暑假）都不给"
+                required: [about, aboutState, prefs, vrcVerified, privacy]
                 properties:
-                  photo:
-                    type: string
-                    enum: [none, checking, ok, hidden]
-                    description: "模型截图：none 没有、checking 审核中、ok 通过、hidden 没通过"
                   about:
                     type: array
                     description: "关于我的问答，q 是问题的文字；没填是 []"
@@ -1182,7 +1179,7 @@ paths:
                   privacy:
                     type: object
                     description: "「谁能看到」每一项现在的设置"
-                    required: [verified, rating, star, online, shared, links, home, vrcinfo, cross]
+                    required: [verified, rating, star, online, shared, links]
                     properties:
                       verified: { type: string, enum: [all, mutual, off], description: "「已验证」标志" }
                       rating: { type: string, enum: [all, mutual, off], description: "评分" }
@@ -1190,16 +1187,12 @@ paths:
                       online: { type: string, enum: [mutual, off], description: "在线状态" }
                       shared: { type: string, enum: [all, mutual, off], description: "共同好友" }
                       links: { type: string, enum: [all, mutual, off], description: "我的连线数" }
-                      home: { type: string, enum: ["on", "off"], description: "个人主页" }
-                      vrcinfo: { type: string, enum: ["on", "off"], description: "个人主页上的 VRChat 资料" }
-                      cross: { type: string, enum: ["on", "off"], description: "擦肩通信 · 星轨相交" }
               example:
-                photo: "ok"
                 about: [{ q: "最近常去的世界是", a: "星夜茶馆" }]
                 aboutState: "ok"
                 prefs: { times: ["工作日晚上"], wants: ["逛新世界"], voice: "基本不开麦（无言势）", voiceOk: null }
                 vrcVerified: true
-                privacy: { verified: "all", rating: "all", star: "mutual", online: "mutual", shared: "all", links: "all", home: "on", vrcinfo: "on", cross: "on" }
+                privacy: { verified: "all", rating: "all", star: "mutual", online: "mutual", shared: "all", links: "all" }
         '401':
           $ref: "#/components/responses/AuthError"
         '403':

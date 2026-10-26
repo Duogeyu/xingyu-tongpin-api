@@ -251,7 +251,7 @@ sequenceDiagram
 | `maps` | 查看你在地图榜的评分和短评 | `GET me/maps`、`GET me/maps/{world}` | ✓ | |
 | `maps.rate` | 在你操作时，为地图打分 | `POST me/maps/{world}/rating`、`POST me/maps/{world}/rating/delete` | ✓ | ✓ |
 | `notifications` | 接收你的星遇同频提醒 | `GET me/notifications`、`GET me/notifications/recent`、`GET me/notes`、`GET me/unread` | ✓ | |
-| `crossings` | 查看你的「星轨相交」 | `GET me/crossings`、`GET me/crossings/cards` | ✓ | ✓ |
+| `crossings` | 查看你的「星轨相交」（会看到其他玩家的资料） | `GET me/crossings`、`GET me/crossings/cards` | ✓ | ✓ |
 | `mutuals` | 查看与你互相连上的星和他们的 VRChat 名字 | `GET me/mutuals` | ✓ | ✓ |
 | `today` | 查看今天路过你的星（会看到其他玩家的资料） | `GET me/today` | | ✓ |
 | `inbox` | 查看连向你的星（会看到其他玩家的资料） | `GET me/inbox` | | ✓ |
@@ -363,7 +363,7 @@ sequenceDiagram
 
 返回**有评分**的地图，按总榜名次排，`limit` 取值 `1–100`（默认 `20`；不是数字或是 `0` 时按 `20`，超过 `100` 按 `100`）。名次怎么算见下面「名次怎么算」。
 
-`sort`（1.13.0 起）：不写或 `top` 是总榜；`week` 是本周榜（北京时间周一零点以后有人打分的地图，按总榜的顺序，每张多一个 `week`：本周几人打分）；`new` 是新上榜（所有地图，最新加的在前，还没评分的 `rank` 是 `null`）。别的值返回 `400 bad_request`。和网页地图榜的「总榜」「本周」「新上榜」一样，只是不分星池。
+`sort`（1.13.0 起）：不写或 `top` 是总榜；`week` 是本周榜（北京时间周一零点以后有人打分的地图，只按本周的打分排，和网页「本周」一样，每张多一个 `week`：本周几人打分）；`new` 是新上榜（所有地图，最新加的在前，还没评分的 `rank` 是 `null`）。别的值返回 `400 bad_request`。和网页地图榜的「总榜」「本周」「新上榜」一样，只是不分星池。
 
 ```json
 {
@@ -709,12 +709,13 @@ sequenceDiagram
 
 | 字段 | 说明 |
 | --- | --- |
-| `kind` | `link` 有星连了你、`mutual` 互相连上、`gift` 礼物和奖励、`invite` 朋友用了你的口令、`yq` 星友圈、`map` 地图榜、`about` 关于我的检查、`photo` 模型截图的审核。以后可能加新的，不认识的照样显示 `text` |
+| `kind` | `link` 有星连了你、`mutual` 互相连上、`gift` 礼物和奖励、`invite` 朋友用了你的口令、`yq` 星友圈、`map` 地图榜、`about` 关于我的检查。以后可能加新的，不认识的照样显示 `text` |
 | `text` | 网页上显示的那句话（纯文字） |
 | `seen` | 玩家在网页上看过没有 |
 | `post` / `world` | 点开去的星友圈动态编号 / 地图，没有时是 `null` |
 
-- 只有上面这几类。账号和 VRChat 验证、星池、星搭、第三方客户端、管理员的通知不在这里。
+- 只有上面这几类，每类也只给我们认得的那几句话，所以条数可能比网页上少。账号和 VRChat 验证、星池、星搭、第三方客户端、管理员的通知不在这里。
+- **看不出玩家在哪个星池**：只有一个星池才会收到的通知不在这里（模型截图的审核、合照、16–17 岁看不到的地图），口令通知里「已经连向」那半句也去掉了。
 - 送礼物的通知在网页上写着对方的 VRChat 名字，这里换成「一颗互相连上的星」。
 
 ---
@@ -730,9 +731,9 @@ sequenceDiagram
 | 字段 | 说明 |
 | --- | --- |
 | `inbox` | 玩家上次看「连向我」以后，新连向 TA 的星 |
-| `cross` | 星轨相交里还没看过的 |
+| `cross` | 星轨相交里还没看过的。**只在令牌有 `crossings` 时才有这个字段**（16–17 岁没有星轨相交，永远是 0 就能看出星池） |
 | `chats` | 私聊未读的消息 |
-| `notes` | 通知中心里未读的（只算 `me/notes` 给的那几类） |
+| `notes` | 通知中心里未读的：`me/notes` 给的那些里玩家还没看过的 |
 
 - 每个授权每天 1500 次，建议 1–2 分钟问一次，只在客户端开着时问。
 
@@ -889,7 +890,7 @@ sequenceDiagram
 | `stickers` | 有过的每种贴纸（同一张贴纸的不同材质算两种），最早拿到的在前 |
 | `sticker` / `finish` | 贴纸 id 和材质，名字见[所有贴纸](#所有贴纸get-apiv1stickers) |
 | `qty` | 仓库里还有几张（贴在星卡上的不算）；`0` 是用完了，网页上也显示「用完了」 |
-| `seed` | 这张贴纸的划痕位置，和网页仓库里画的一样 |
+| `seed` | 这张贴纸的划痕位置，和网页仓库里画的一样。它和玩家的星编号有关：不要把带 `seed` 的贴纸图公开展示给别人 |
 | `url` | 这张贴纸的图（SVG，没有磨损），`<img>` 直接能用 |
 | `dust` | 星尘余额 |
 
@@ -904,18 +905,16 @@ sequenceDiagram
 
 ```json
 {
-  "photo": "ok",
   "about": [{ "q": "最近常去的世界是", "a": "星夜茶馆" }],
   "aboutState": "ok",
   "prefs": { "times": ["工作日晚上"], "wants": ["逛新世界"], "voice": "基本不开麦（无言势）", "voiceOk": null },
   "vrcVerified": true,
-  "privacy": { "verified": "all", "rating": "all", "star": "mutual", "online": "mutual", "shared": "all", "links": "all", "home": "on", "vrcinfo": "on", "cross": "on" }
+  "privacy": { "verified": "all", "rating": "all", "star": "mutual", "online": "mutual", "shared": "all", "links": "all" }
 }
 ```
 
 | 字段 | 说明 |
 | --- | --- |
-| `photo` | 模型截图：`none` 没有、`checking` 审核中、`ok` 通过、`hidden` 没通过 |
 | `about` | 关于我的问答（`[{q, a}]`，`q` 是问题的文字）；没填是 `[]` |
 | `aboutState` | 关于我的检查：`checking` 检查中、`ok` 通过、`hidden` 没通过；没填是 `null` |
 | `prefs` | 推荐用的几项，网页上显示的文字：`times` 常在线的时间、`wants` 想找人一起、`voice` 说话习惯、`voiceOk` 希望对方怎样；没选是 `[]` 或 `null` |
@@ -930,9 +929,8 @@ sequenceDiagram
 | `online` | 在线状态 | `mutual`、`off` |
 | `shared` | 共同好友 | `all`、`mutual`、`off` |
 | `links` | 我的连线数 | `all`、`mutual`、`off` |
-| `home` | 个人主页 | `on` 公开、`off` 不公开 |
-| `vrcinfo` | 个人主页上的 VRChat 资料 | `on`、`off` |
-| `cross` | 擦肩通信 · 星轨相交 | `on`、`off` |
+
+**看不出玩家在哪个星池**：同样的设置，两个星池的回答一模一样。所以只有一个星池才有的不在这里：模型截图、个人主页、个人主页上的 VRChat 资料、星轨相交只有 18 岁以上有；常在线的时间里的「寒暑假」只有 16–17 岁能选，这里不给。
 
 - 每个玩家都有这九项。有的功能不是每个人都能用（比如个人主页、星轨相交），网页上那时不显示这一项，这里照样给存着的值，这时它不起作用。
 - 不给邮箱、星池、设备、兑换码、邀请码。只读，不能改。
@@ -1450,6 +1448,7 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 | | `me/maps/{world}`、`me/board`、地图页 | `img`：路径 `/api/match?xdimg=…`；`imgUrl`：同一张图的完整网址（1.11.0 起） |
 | 热评 | 开放数据 | `hot: {text, by, up, went}`（`by` 是「某位<星位>」） |
 | | `me/board` | `hot: {id, text, up, vote, mine?, went?}`，还有最多 3 条的 `hots` |
+| | `me/board` | `rank`：在总榜或本周榜上的名次（有人打分的才有，筛选不改名次）；`intro`：赞最多的那段介绍的第一行，没有是 `null`（2026-10-27 起） |
 | 能不能打分 | `me/maps/{world}` | `can: true`（已弃用） |
 | | 地图页 | `can: "yes"` |
 | 别的星 | `me/crossings` | `{n, name, line, group, star, intro（前 60 字）, vrc, linked, mutual, at, fresh}` |
@@ -1508,7 +1507,7 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 
 | 范围 / 接口 | 限制 |
 | --- | --- |
-| **每天次数的响应头** | 带每天次数的接口（两份读、各种写）回答 `RateLimit-Limit`（上限）、`RateLimit-Remaining`（还剩几次）、`RateLimit-Reset`（几秒后重置，北京时间零点）。每分钟的限制不给这组头（各台服务器分开数，给了也不准） |
+| **每天次数的响应头** | 带每天次数的接口（两份读、各种写）回答 `RateLimit-Limit`（上限）、`RateLimit-Remaining`（还剩几次）、`RateLimit-Reset`（几秒后重置，北京时间零点）。签名图片算在第一份读里，但不带这组头（拿到链接的人都能打开，不该看到这个授权的用量）。每分钟的限制不给这组头（各台服务器分开数，给了也不准） |
 | **所有 `429`** | 都带 `Retry-After`（秒）：每分钟的限制是 60；提醒轮询太快（`too_soon`）是 25 秒间隔还剩几秒；这一轮连满（`quota`）是到下一轮；其余每天的次数到北京时间零点。桌面客户端的页面也能读到这个头 |
 | **每个网络地址（总计）** | 每分钟 120 次左右（不含贴纸素材） |
 | **贴纸素材（`/stickers`）** | 每个网络地址每分钟 **600 次**，单独计算 |
