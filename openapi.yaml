@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.8.5"
+  version: "1.8.6"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -1336,6 +1336,8 @@ paths:
       summary: "地图页"
       description: |
         **需要权限 `maps`。** 分数分布、介绍、短评（最热：去过 > 已验证 > 赞）、配置、正在开的房。 请求体：?sort=hot|new。
+
+        写的人（短评、介绍、添加人的 `who` / `adder`）：令牌有 `mutuals` 且客户端审核通过时和网页一样（对方的 `n`，互相连上时还有 VRChat 名字）；没有时别的玩家都是 `{"name": "某位<星位>", "group": "G", "me": false}`，和公开地图页一样，不给编号和 VRChat 名字。自己的照旧。
       security:
         - client: []
           token: []
@@ -1350,7 +1352,9 @@ paths:
       tags: ["网页上的动作"]
       summary: "这张地图的全部介绍"
       description: |
-        **需要权限 `maps`。** 
+        **需要权限 `maps`。**
+
+        写的人（短评、介绍、添加人的 `who` / `adder`）：令牌有 `mutuals` 且客户端审核通过时和网页一样（对方的 `n`，互相连上时还有 VRChat 名字）；没有时别的玩家都是 `{"name": "某位<星位>", "group": "G", "me": false}`，和公开地图页一样，不给编号和 VRChat 名字。自己的照旧。
       security:
         - client: []
           token: []

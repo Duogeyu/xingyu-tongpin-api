@@ -895,6 +895,8 @@ sequenceDiagram
 
 做的事和网页一样，网页的规则和上限照样算；每个授权每天另有上限：举报 10、隐藏 50、评论 50、点亮 200、删除 50、地图赞踩 200、添加地图 10、写介绍 10，读取算进 1000 次里。**显示其他玩家内容的客户端，请把举报和隐藏做上**（权限 `safety`）。
 
+地图页、全部介绍，以及回答整张地图页的写接口（添加地图、写介绍），写的人（短评、介绍、添加人的 `who` / `adder`）：令牌有 `mutuals` 且客户端审核通过时和网页一样（对方的 `n`，互相连上时还有 VRChat 名字）；没有时别的玩家都是 `{"name": "某位<星位>", "group": "G", "me": false}`，和公开地图页一样，不给编号和 VRChat 名字。自己的照旧。
+
 | 方法 | 路径 | 权限 | 做什么 | 说明 |
 |---|---|---|---|---|
 | `POST` | `/api/v1/me/stars/{n}/report` | `safety` | 举报一颗星（{why, note}） | why：contact 联系方式、romance 恋爱约会、rude 不友善、ad 广告、harass 骚扰、age 年龄、photo 照片、other；note 最多 100 字。只能举报见过的星（推荐过、连过、在星空里点开过）。 |
@@ -915,8 +917,8 @@ sequenceDiagram
 | `POST` | `/api/v1/me/comments/{cid}/report` | `safety` | 举报评论（{why}） |  |
 | `GET` | `/api/v1/me/board` | `maps` | 玩家看到的地图榜（?sort=top|week|new|went&q=） | 和网页「榜单」一样，带玩家自己的评分、去过、热评（hots）；q 搜榜上的地图名或作者。 |
 | `POST` | `/api/v1/me/maps` | `maps.write` | 添加地图（{world}） | world 是 wrld_… 或地图链接；要过地图检查才上榜。 |
-| `GET` | `/api/v1/me/maps/{world}/page` | `maps` | 地图页（?sort=hot|new） | 分数分布、介绍、短评（最热：去过 > 已验证 > 赞）、配置、正在开的房。 |
-| `GET` | `/api/v1/me/maps/{world}/intros` | `maps` | 这张地图的全部介绍 |  |
+| `GET` | `/api/v1/me/maps/{world}/page` | `maps` | 地图页（?sort=hot|new） | 分数分布、介绍、短评（最热：去过 > 已验证 > 赞）、配置、正在开的房。没有 `mutuals` 时写的人是「某位…」（见上）。 |
+| `GET` | `/api/v1/me/maps/{world}/intros` | `maps` | 这张地图的全部介绍 | 没有 `mutuals` 时写的人是「某位…」（见上）。 |
 | `POST` | `/api/v1/me/maps/{world}/intro` | `maps.write` | 写介绍（{text}） | 最多 200 字，过检查后显示。 |
 | `POST` | `/api/v1/me/maps/{world}/intro/delete` | `maps.write` | 删自己的介绍 |  |
 | `POST` | `/api/v1/me/maps/{world}/rating/delete` | `maps.rate` | 删自己的评分 |  |
