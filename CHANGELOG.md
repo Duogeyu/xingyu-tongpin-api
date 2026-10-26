@@ -2,6 +2,18 @@
 
 接口要变的地方先写在这里，旧的写法会留一段时间再停。
 
+## 2026-10-27 · 规范化（1.11.0）
+
+只加不改，原来的字段和写法都还在。
+
+- **开放数据给任何网页读**：`boards/maps`、`maps`、`maps/{world}`、`status` 回答 `Access-Control-Allow-Origin: *`，可以带 `X-Client`（预检也通过），出错时网页也能读到原因。其他接口照旧只给桌面客户端的页面，并且都带 `Vary: Origin`。
+- **`HEAD`**：开放数据和 `status` 支持（和 `GET` 一样，没有正文）。玩家自己的接口每次都算次数，不支持。
+- **`405`**：路径对、方法不对，回答 `405 {"error": "method"}` 和 `Allow` 头；原来是 `404 not_found`。
+- **每天次数的响应头**：带每天次数的接口回答 `RateLimit-Limit`、`RateLimit-Remaining`、`RateLimit-Reset`（秒，到北京时间零点）。
+- **加的字段**：`me/board`、地图页的地图有 `world`（和 `id` 同值）；`me/maps/{world}`、打分的回答、`me/board`、地图页有 `imgUrl`（封面的完整网址）；评论、点亮、合照回答里的 `post.img` 也有 `url`；`POST /connect` 多了 `access_token`、`token_type`、`scope`（`token` 还在）。
+- 贴纸的错误（`400`、`404`）只缓存一分钟，原来是一天。
+- 「我登记的应用」里能看到每个应用 7 天的调用次数、被限流和被拒的次数、有几位玩家连着。
+
 ## 2026-10-27 · 文档对齐（1.10.1）
 
 只改文档，接口没变。

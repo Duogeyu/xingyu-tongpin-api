@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.10.1"
+  version: "1.11.0"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -81,6 +81,8 @@ info:
     ### 跨域（CORS）与调用环境
 
     - **原生程序 / 脚本**（Node.js、Rust、Python、C#、VRChat Udon 等）：直接发起请求，不受浏览器同源策略限制。
+    - **开放数据与 `/status`**：任何网页都能直接读（`Access-Control-Allow-Origin: *`），可带 `X-Client`；也支持 `HEAD`。
+    - **方法**：路径对、方法不对返回 `405 method`，`Allow` 头列出可用方法。页面能读到的响应头：`Retry-After`、`RateLimit-Limit`、`RateLimit-Remaining`、`RateLimit-Reset`（带每天次数的接口才有，`Reset` 是到北京时间零点的秒数）。
     - **桌面客户端内置页面**（如 Tauri）：仅允许 `tauri://localhost`、`http(s)://tauri.localhost`、`null`（本地文件页面）以及开发时的 `http://localhost` / `http://127.0.0.1` 读取响应；普通外部网站无法跨域调用。
     - **`/oauth/token` 与 `/oauth/userinfo`**：允许任何来源跨域调用（`Access-Control-Allow-Origin: *`），且不需要 `X-Client`。
     - **网站调用 `/me/…`**：普通网站的网页跨域读不到，请从网站服务器发起，`X-Client` 填网站的 `client_id`。
@@ -495,6 +497,14 @@ paths:
                     pattern: "^[0-9a-f]{48}$"
                     description: "48 位十六进制令牌，仅保存在玩家本机，后续请求放入 Authorization: Bearer <token>"
                     example: "a1b2c3d4e5f60123456789abcdef0123456789abcdef0123"
+                  access_token:
+                    type: string
+                    description: "和 token 一样（和设备授权同名，1.11.0 起）"
+                  token_type:
+                    type: string
+                    const: "Bearer"
+                  scope:
+                    $ref: "#/components/schemas/Scope"
                   me:
                     allOf:
                       - $ref: "#/components/schemas/Me"
@@ -962,6 +972,10 @@ paths:
                         description: 没有时是 null
                       rooms:
                         type: array
+                      world:
+                        type: string
+                      imgUrl:
+                        type: string
                   intro:
                     description: 没有时是 null
                   intros:
@@ -1014,6 +1028,8 @@ paths:
                     - 0
                   perf: null
                   rooms: []
+                  world: wrld_bbbbbbbb-0000-4000-8000-0000000000b2
+                  imgUrl: https://vrcc.cc/api/match?xdimg=wrld_bbbbbbbb-0000-4000-8000-0000000000b2
                 intro: null
                 intros: 0
                 sort: hot
@@ -1396,7 +1412,7 @@ paths:
               example:
                 blocks:
                   - "n": 3
-                    at: 1793034710312
+                    at: 1793035864717
                     vrc: Player3
                     name: 彩蛋猎人
                     report: null
@@ -1463,9 +1479,9 @@ paths:
                     type: string
               example:
                 level: 2
-                at: 1793034710075
-                v: "1793034710075:2"
-                url: https://vrcc.cc/api/v1/photo/2?client=probe-full&g=1&exp=1793035310271&sig=02a2b4a4c00b83f5efe498ef3bf58d821d0db7b6cfc5da4fc8d2f20a8e354d08
+                at: 1793035864521
+                v: "1793035864521:2"
+                url: https://vrcc.cc/api/v1/photo/2?client=probe-full&g=1&exp=1793036464676&sig=ba4233f19be924e7909febd33e34a5da715974b936dbba9e3ea0cfbbcfba3028
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/messages/{id}/delete:
@@ -1560,12 +1576,13 @@ paths:
                   kind: shot
                   text: 今天的星星很亮
                   vis: all
-                  at: 1793034710075
+                  at: 1793035864521
                   mine: false
                   img:
                     w: 4
                     h: 3
                     grid: null
+                    url: https://vrcc.cc/api/v1/img/1?client=probe-full&g=1&exp=1793036464691&sig=ca02d00f674da4c00f25939621d2aabb0de4abd63c69ebd9992aaeeb95bc10ad
                   map: null
                   lit: 0
                   litMe: false
@@ -1573,7 +1590,7 @@ paths:
                   last:
                     - cid: 1
                       text: 谢谢
-                      at: 1793034710075
+                      at: 1793035864521
                       who:
                         "n": 2
                         name: 彩蛋猎人
@@ -1584,7 +1601,7 @@ paths:
                         vrc: Player2
                     - cid: 2
                       text: 拍得真好
-                      at: 1793034710274
+                      at: 1793035864680
                       who:
                         "n": 1
                         name: 彩蛋猎人
@@ -1625,7 +1642,7 @@ paths:
                 cmts:
                   - cid: 1
                     text: 谢谢
-                    at: 1793034710075
+                    at: 1793035864521
                     who:
                       "n": 2
                       name: 彩蛋猎人
@@ -1636,7 +1653,7 @@ paths:
                       vrc: Player2
                   - cid: 2
                     text: 拍得真好
-                    at: 1793034710274
+                    at: 1793035864680
                     who:
                       "n": 1
                       name: 彩蛋猎人
@@ -1688,12 +1705,13 @@ paths:
                   kind: shot
                   text: 今天的星星很亮
                   vis: all
-                  at: 1793034710075
+                  at: 1793035864521
                   mine: false
                   img:
                     w: 4
                     h: 3
                     grid: null
+                    url: https://vrcc.cc/api/v1/img/1?client=probe-full&g=1&exp=1793036464684&sig=2122c0da83a181bdb618ab4726fb5c6c52a876ed2ba841283a852d0258aa0721
                   map: null
                   lit: 0
                   litMe: false
@@ -1701,7 +1719,7 @@ paths:
                   last:
                     - cid: 1
                       text: 谢谢
-                      at: 1793034710075
+                      at: 1793035864521
                       who:
                         "n": 2
                         name: 彩蛋猎人
@@ -1712,7 +1730,7 @@ paths:
                         vrc: Player2
                     - cid: 2
                       text: 拍得真好
-                      at: 1793034710274
+                      at: 1793035864680
                       who:
                         "n": 1
                         name: 彩蛋猎人
@@ -1753,7 +1771,7 @@ paths:
                 cmts:
                   - cid: 1
                     text: 谢谢
-                    at: 1793034710075
+                    at: 1793035864521
                     who:
                       "n": 2
                       name: 彩蛋猎人
@@ -1764,7 +1782,7 @@ paths:
                       vrc: Player2
                   - cid: 2
                     text: 拍得真好
-                    at: 1793034710274
+                    at: 1793035864680
                     who:
                       "n": 1
                       name: 彩蛋猎人
@@ -1802,12 +1820,13 @@ paths:
                   kind: shot
                   text: 今天的星星很亮
                   vis: all
-                  at: 1793034710075
+                  at: 1793035864521
                   mine: false
                   img:
                     w: 4
                     h: 3
                     grid: null
+                    url: https://vrcc.cc/api/v1/img/1?client=probe-full&g=1&exp=1793036464698&sig=15e19627b00dc819531ffbc211476ab57df50f9082c11b5640fc4075790f1054
                   map: null
                   lit: 1
                   litMe: true
@@ -1815,7 +1834,7 @@ paths:
                   last:
                     - cid: 1
                       text: 谢谢
-                      at: 1793034710075
+                      at: 1793035864521
                       who:
                         "n": 2
                         name: 彩蛋猎人
@@ -1826,7 +1845,7 @@ paths:
                         vrc: Player2
                     - cid: 2
                       text: 拍得真好
-                      at: 1793034710274
+                      at: 1793035864680
                       who:
                         "n": 1
                         name: 彩蛋猎人
@@ -2086,6 +2105,10 @@ paths:
                           description: 没有时是 null
                         room:
                           type: boolean
+                        world:
+                          type: string
+                        imgUrl:
+                          type: string
               example:
                 sort: top
                 min: 1
@@ -2122,6 +2145,8 @@ paths:
                         vote: 0
                     weight: null
                     room: false
+                    world: wrld_aaaaaaaa-0000-4000-8000-0000000000a1
+                    imgUrl: https://vrcc.cc/api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1
         "403": { description: "权限不够（scope / scope_unreviewed）" }
         "429": { description: "今天的次数用完了" }
   /me/maps/{world}/page:
@@ -2195,6 +2220,10 @@ paths:
                         description: 没有时是 null
                       rooms:
                         type: array
+                      world:
+                        type: string
+                      imgUrl:
+                        type: string
                   intro:
                     type: object
                     properties:
@@ -2313,12 +2342,14 @@ paths:
                     - 0
                   perf: null
                   rooms: []
+                  world: wrld_aaaaaaaa-0000-4000-8000-0000000000a1
+                  imgUrl: https://vrcc.cc/api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1
                 intro:
                   id: 1
                   text: 夜里人少，适合安静地坐一会儿。
                   up: 0
                   down: 0
-                  at: 1793034710075
+                  at: 1793035864521
                   who:
                     "n": 2
                     name: 彩蛋猎人
@@ -2338,7 +2369,7 @@ paths:
                     score: 8
                     up: 0
                     down: 0
-                    at: 1793034710075
+                    at: 1793035864521
                     who:
                       "n": 2
                       name: 彩蛋猎人
@@ -2357,7 +2388,7 @@ paths:
                     score: 9
                     up: 0
                     down: 0
-                    at: 1793034710225
+                    at: 1793035864628
                     who:
                       "n": 1
                       name: 彩蛋猎人
@@ -2426,7 +2457,7 @@ paths:
                     text: 夜里人少，适合安静地坐一会儿。
                     up: 0
                     down: 0
-                    at: 1793034710075
+                    at: 1793035864521
                     who:
                       "n": 2
                       name: 彩蛋猎人
@@ -2509,6 +2540,10 @@ paths:
                         description: 没有时是 null
                       rooms:
                         type: array
+                      world:
+                        type: string
+                      imgUrl:
+                        type: string
                   intro:
                     type: object
                     properties:
@@ -2648,12 +2683,14 @@ paths:
                     - 0
                   perf: null
                   rooms: []
+                  world: wrld_aaaaaaaa-0000-4000-8000-0000000000a1
+                  imgUrl: https://vrcc.cc/api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1
                 intro:
                   id: 1
                   text: 夜里人少，适合安静地坐一会儿。
                   up: 0
                   down: 0
-                  at: 1793034710075
+                  at: 1793035864521
                   who:
                     "n": 2
                     name: 彩蛋猎人
@@ -2673,7 +2710,7 @@ paths:
                     score: 8
                     up: 1
                     down: 0
-                    at: 1793034710075
+                    at: 1793035864521
                     who:
                       "n": 2
                       name: 彩蛋猎人
@@ -2692,7 +2729,7 @@ paths:
                     score: 9
                     up: 0
                     down: 0
-                    at: 1793034710225
+                    at: 1793035864628
                     who:
                       "n": 1
                       name: 彩蛋猎人
@@ -2709,7 +2746,7 @@ paths:
                     text: 雨天来的时候灯光最好看。
                     up: 0
                     down: 0
-                    at: 1793034710353
+                    at: 1793035864765
                     who:
                       "n": 1
                       name: 彩蛋猎人
@@ -2796,6 +2833,10 @@ paths:
                         description: 没有时是 null
                       rooms:
                         type: array
+                      world:
+                        type: string
+                      imgUrl:
+                        type: string
                   intro:
                     type: object
                     properties:
@@ -2914,12 +2955,14 @@ paths:
                     - 0
                   perf: null
                   rooms: []
+                  world: wrld_aaaaaaaa-0000-4000-8000-0000000000a1
+                  imgUrl: https://vrcc.cc/api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1
                 intro:
                   id: 1
                   text: 夜里人少，适合安静地坐一会儿。
                   up: 0
                   down: 0
-                  at: 1793034710075
+                  at: 1793035864521
                   who:
                     "n": 2
                     name: 彩蛋猎人
@@ -2939,7 +2982,7 @@ paths:
                     score: 8
                     up: 1
                     down: 0
-                    at: 1793034710075
+                    at: 1793035864521
                     who:
                       "n": 2
                       name: 彩蛋猎人
@@ -2958,7 +3001,7 @@ paths:
                     score: 9
                     up: 0
                     down: 0
-                    at: 1793034710225
+                    at: 1793035864628
                     who:
                       "n": 1
                       name: 彩蛋猎人
@@ -3046,6 +3089,10 @@ paths:
                         description: 没有时是 null
                       rooms:
                         type: array
+                      world:
+                        type: string
+                      imgUrl:
+                        type: string
                   intro:
                     type: object
                     properties:
@@ -3118,12 +3165,14 @@ paths:
                     - 0
                   perf: null
                   rooms: []
+                  world: wrld_aaaaaaaa-0000-4000-8000-0000000000a1
+                  imgUrl: https://vrcc.cc/api/match?xdimg=wrld_aaaaaaaa-0000-4000-8000-0000000000a1
                 intro:
                   id: 1
                   text: 夜里人少，适合安静地坐一会儿。
                   up: 0
                   down: 0
-                  at: 1793034710075
+                  at: 1793035864521
                   who:
                     "n": 2
                     name: 彩蛋猎人
@@ -4457,6 +4506,10 @@ components:
           type: [string, "null"]
           description: "封面相对路径（接在 https://vrcc.cc 后面使用），无封面或不可见时为 null"
           example: "/api/match?xdimg=wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd"
+        imgUrl:
+          type: string
+          description: "同一张封面的完整网址，有 img 时才有（1.11.0 起）"
+          example: "https://vrcc.cc/api/match?xdimg=wrld_4432ea9b-729c-46e3-8eaf-846aa0a37fdd"
 
     ErrorBody:
       type: object
@@ -4495,7 +4548,7 @@ components:
             - `xd_world` (400 / 404)：地图 ID 格式不对 / VRChat 上没有这张图
             - `xd_search` (502)：去 VRChat 查地图失败，稍后再试
             - `busy` (409)：星卡还在生成（今天的星）
-            - `method` (405)：用了 GET、POST 以外的方法
+            - `method` (405)：这个路径不认这个方法，`Allow` 头列出能用的
             - `server` / `server_error` (500)：服务器出错
             - `stop` (503)：停站维护中，附带 `say`（说明）和 `until`（预计恢复，毫秒），只出现在网页上的动作；令牌没事
             - （`map_not_went`、`map_elsewhere` 从 2026-10-24 起不再返回）

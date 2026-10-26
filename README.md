@@ -225,6 +225,7 @@ sequenceDiagram
 - **请求与响应格式**：`POST` 的正文是 JSON，也可以是表单（`application/x-www-form-urlencoded`），最大 2 KB。是和否的参数（比如点亮的 `on`、合照的 `yes`、`?mark`）：`true`、`1` 是，`false`、`0` 否，JSON 的 `true` / `false` 和字符串 `"true"` / `"1"` 都认；所有回答都是 JSON。出错时 HTTP 状态码不是 `2xx`，正文是 `{"error": "…"}`，有的还带 `need`、`why`、`every`。
 - **宽松的地方**：正文里不认识的字段会被忽略；数字写成字符串（`"score": "7"`）也认。`?client=` 在所有接口都能用，但请优先用请求头。
 - **只保证文档列出的字段**：「网页上的动作」的回答里可能还有别的字段，那是网页自己用的，可能变化或去掉，不要依赖。正在弃用的字段见「[弃用中](#弃用中)」。
+- **方法**：只认 `GET`、`POST`；开放数据和 `status` 也认 `HEAD`（玩家自己的接口每次都算次数，不认 `HEAD`）。路径对、方法不对，回答 `405 {"error": "method"}`，`Allow` 头写着这个路径能用哪些方法。
 - **时间**：时间戳都是毫秒；`expires_in`、`interval`、`every`、`Retry-After` 是秒。
 - **停站维护**：网页上的动作（今天的星、连向我、私聊、星友圈、第三批）停站时回答 `503 {"error": "stop", "say": "说明", "until": 毫秒}`，令牌没事，等到 `until` 以后再试；提醒、星卡、地图榜照常。
 - **示例**：每个接口的完整示例回答在 [`examples/responses.json`](examples/responses.json)，是离线生成的假数据。
@@ -327,12 +328,14 @@ sequenceDiagram
 
 ### 桌面客户端页面的跨域（CORS）说明
 
-- **从浏览器/WebView 页面里直接发请求**的客户端（比如用 Tauri 做的）：只有以下 `Origin` 来源能读到回答：
+- **开放数据**（`boards/maps`、`maps`、`maps/{world}`）和 `status`：任何网页都能直接读（`Access-Control-Allow-Origin: *`），可以带 `X-Client` 请求头。社区网站、群机器人的网页不用再经过自己的服务器。
+- **玩家自己的接口**，从浏览器/WebView 页面里直接发请求的客户端（比如用 Tauri 做的）：只有以下 `Origin` 来源能读到回答：
   - `tauri://localhost`
   - `http://tauri.localhost`、`https://tauri.localhost`
   - `null`（本地文件页面 `file://`）
   - `http://localhost`、`http://127.0.0.1`（本地开发时）
-  - 普通网站网页无法跨域调用。
+  - 普通网站的网页读不到玩家自己的接口。
+- **页面能读到的响应头**：`Retry-After`、`RateLimit-Limit`、`RateLimit-Remaining`、`RateLimit-Reset`。
 - **从程序后端或脚本直接发请求**（Rust、Node.js、Python、C# 等）：不受浏览器跨域限制。
 - **`oauth/token` 和 `oauth/userinfo`**：任何网站都能跨域调用（`Access-Control-Allow-Origin: *`），只有前端的网站可以直接在浏览器里用 PKCE 换令牌。
 - **网站调 `me/…`**：普通网站的网页跨域读不到，要从你的服务器发。
@@ -522,7 +525,7 @@ sequenceDiagram
 }
 ```
 
-- `token`：48 位十六进制令牌，之后的所有个人接口都在 `Authorization: Bearer <token>` 请求头里带它。
+- `token`（也叫 `access_token`，和设备授权一样，还有 `token_type: "Bearer"`、`scope`）：48 位十六进制令牌，之后的所有个人接口都在 `Authorization: Bearer <token>` 请求头里带它。
 - `me.star`：玩家在 `/light/` 的点亮编号，没有时是 `null`。
 - `me.vrc`：第三方客户端用连接码连上时总是 `null`（连接码给的默认权限里没有 `vrchat`）。
 - **错误状态**：
@@ -771,7 +774,7 @@ sequenceDiagram
 | `mine` | 玩家自己打过的分（1–10，没打过为 `null`） |
 | `words` / `wordsOk` | 玩家自己的短评和审核状态（`wait` 审核中、`ok` 通过、`hidden` 没通过） |
 | `can` / `need` | **已弃用。** 2026-10-24 起谁都能打分，`can` 恒为 `true`、`need` 恒为 `null`；2026-12-26 起不再返回 |
-| `img` | 封面图路径，接在 `https://vrcc.cc` 后面使用 |
+| `img` / `imgUrl` | 封面图：`img` 是路径（接在 `https://vrcc.cc` 后面），`imgUrl` 是完整网址 |
 
 ---
 
@@ -1018,7 +1021,7 @@ sequenceDiagram
 - `client_id`：`app_` 加 16 位十六进制。
 - `client_secret`：`sec_` 加 48 位十六进制，**只显示这一次**。丢了可以重新生成，旧的立刻不能用。
 
-每人最多登记 5 个。登记完就能用普通权限；敏感权限要[申请审核](#申请审核)。没审核的：登录页写着「这个网站由玩家自行登记，未经星遇同频审核。请只在你信任的网站登录。」，设备授权的同意页写着「玩家自行登记，未经星遇同频审核」，玩家的列表里标「未审核」。违反「[使用要求](#使用要求)」的，管理员会停用。
+每人最多登记 5 个。「我登记的应用」里每个应用下面写着 7 天的调用次数（和今天的）、被限流和被拒的次数、有几位玩家连着，只有数字，不说是谁。登记完就能用普通权限；敏感权限要[申请审核](#申请审核)。没审核的：登录页写着「这个网站由玩家自行登记，未经星遇同频审核。请只在你信任的网站登录。」，设备授权的同意页写着「玩家自行登记，未经星遇同频审核」，玩家的列表里标「未审核」。违反「[使用要求](#使用要求)」的，管理员会停用。
 
 #### 申请审核
 
@@ -1196,7 +1199,7 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 
 ### 一张贴纸：`GET /api/v1/stickers/{id}?fin=&wear=&seed=`
 
-返回 SVG（`image/svg+xml`），和网页用同一份代码画，大小随你缩放。`fin` 默认 `paper`，`wear` 默认 0，`seed` 默认 1；材质不在这张贴纸的 `finishes` 里、磨损不在 0–5、种子不是整数时返回 `400`，没有这张贴纸返回 `404`。图片贴纸（只有 `paper` 的那几张）会跳到它的 webp。
+返回 SVG（`image/svg+xml`），和网页用同一份代码画，大小随你缩放。`fin` 默认 `paper`，`wear` 默认 0，`seed` 默认 1；材质不在这张贴纸的 `finishes` 里、磨损不在 0–5、种子不是整数时返回 `400`，没有这张贴纸返回 `404`（错误只缓存一分钟）。图片贴纸（只有 `paper` 的那几张）会跳到它的 webp。
 
 镭射、烫金这些反光跟着 CSS 变量 `--tx`、`--ty`（−1 到 1）走：把 SVG 直接放进页面时，可以随鼠标或手机倾斜改这两个值；用 `<img>` 时是静止的。
 
@@ -1215,9 +1218,9 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 | 东西 | 接口 | 怎么写 |
 | --- | --- | --- |
 | 地图的 ID | 开放数据、`me/maps`、`me/maps/{world}` | `world` |
-| | `me/board`、地图页（`me/maps/{world}/page`） | `id` |
+| | `me/board`、地图页（`me/maps/{world}/page`） | `id`，也有同值的 `world`（1.11.0 起） |
 | 地图的图 | 开放数据 | `img`：完整网址 `https://vrcc.cc/maps/<id>.jpg` |
-| | `me/maps/{world}`、`me/board`、地图页 | `img`：路径 `/api/match?xdimg=…`，接在 `https://vrcc.cc` 后面 |
+| | `me/maps/{world}`、`me/board`、地图页 | `img`：路径 `/api/match?xdimg=…`；`imgUrl`：同一张图的完整网址（1.11.0 起） |
 | 热评 | 开放数据 | `hot: {text, by, up, went}`（`by` 是「某位<星位>」） |
 | | `me/board` | `hot: {id, text, up, vote, mine?, went?}`，还有最多 3 条的 `hots` |
 | 能不能打分 | `me/maps/{world}` | `can: true`（已弃用） |
@@ -1229,11 +1232,11 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 | 玩家自己 | `device/token`、`connect` | `me: {star, vrc}`，`vrc` 是 VRChat 名字（字符串） |
 | | `oauth/token`、`oauth/userinfo` | `user: {sub, star, verified, vrc}`，`vrc` 是 `{id, name}`（对象） |
 | 换到的令牌 | `device/token` | `access_token`、`token_type`、`scope` |
-| | `connect` | `token` |
+| | `connect` | `token`，也有同值的 `access_token`，和 `token_type`、`scope`（1.11.0 起） |
 | 星轨相交未读 | `me/notifications` | `dot`：数字 |
 | | `me/inbox` | `cross`：`{n, fresh}` |
 | 动态的图 | `me/posts` | `img: {w, h, grid, url}` |
-| | 评论、点亮的回答里的 `post` | `img: {w, h, grid}`，没有 `url`，要看图请重新拿 `me/posts` |
+| | 评论、点亮、合照的回答里的 `post` | 一样有 `url`（1.11.0 起） |
 
 **没有值的时候：** `me/crossings`、`me/mutuals`、开放数据里没有值的字段是 `null`；网页上的动作里，`vrc`、`vrcUser`、`check`、`went`、`verified`、`why` 这类只在有值时才出现，没有时字段不在。两种都要能处理。
 
@@ -1263,6 +1266,7 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 
 | 范围 / 接口 | 限制 |
 | --- | --- |
+| **每天次数的响应头** | 带每天次数的接口（两份读、各种写）回答 `RateLimit-Limit`（上限）、`RateLimit-Remaining`（还剩几次）、`RateLimit-Reset`（几秒后重置，北京时间零点）。每分钟的限制不给这组头（各台服务器分开数，给了也不准） |
 | **所有 `429`** | 都带 `Retry-After`（秒）：每分钟的限制是 60；提醒轮询太快（`too_soon`）是 25 秒间隔还剩几秒；这一轮连满（`quota`）是到下一轮；其余每天的次数到北京时间零点。桌面客户端的页面也能读到这个头 |
 | **每个网络地址（总计）** | 每分钟 120 次左右（不含贴纸素材） |
 | **贴纸素材（`/stickers`）** | 每个网络地址每分钟 **600 次**，单独计算 |
