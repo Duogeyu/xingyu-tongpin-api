@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.11.0"
+  version: "1.12.0"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -40,8 +40,10 @@ info:
     | `photos` | 查看其他玩家的照片（互相连上后才是清晰的） | `GET /me/stars/{n}/photo` | | ✓ |
     | `maps.write` | 在你操作时，写地图介绍、给短评点赞或踩、添加地图 | `POST /me/maps`、`…/intro`、`/me/map-votes` | | ✓ |
     | `safety` | 在你操作时，举报或隐藏其他玩家和内容 | 举报、隐藏、`GET /me/hidden` | | ✓ |
+    | `bag` | 查看你仓库里的贴纸和星尘 | `GET /me/bag` | | |
+    | `settings` | 查看你的资料和隐私设置（不含邮箱和星池） | `GET /me/settings` | | |
 
-    **敏感权限只给审核过的。** 普通权限（`profile` `card` `maps` `notifications`）都能要；敏感权限：
+    **敏感权限只给审核过的。** 普通权限（`profile` `card` `maps` `notifications` `bag` `settings`）都能要；敏感权限：
 
     - 开 Issue 登记的客户端：全部可要；省略时为 `profile notifications crossings mutuals maps maps.rate`（旧的连接码授权同此）。
     - 审核通过的自助登记应用（`app_…`，网站或客户端）：全部可要，省略时只有 `profile`。网站在 `/oauth/authorize` 的 `scope` 中指定，客户端在 `POST /device/code` 中指定（`X-Client` 填 `client_id`）。
@@ -133,7 +135,7 @@ tags:
   - name: "玩家个人数据"
     description: |
       需同时携带 `X-Client: <标识>` 与 `Authorization: Bearer <令牌>` 请求头（令牌严禁放入 URL），且令牌须有对应权限（否则 `403 scope`）。
-      用于拉取实时提醒、查看星轨相交与互相连上的星友、查看星卡与地图评分、给当前所在的 VRChat 地图打分。
+      用于拉取实时提醒、查看星轨相交与互相连上的星友、查看星卡与地图评分、给当前所在的 VRChat 地图打分、查看仓库里的贴纸和星尘、查看我的资料和隐私设置。
   - name: "网页上的动作"
     description: |
       今天的星、连向我、连线、私聊、星友圈：与网页执行同一个动作，网页的规则与上限原样适用（只能连今天这一轮等网页允许的星、只能和互相连上的人私聊、发言检查、16–17 岁与 18 岁以上分开等），回答与网页相同。这里列出主要字段：没列出的是网页自己用的，可能变化或去掉，不要依赖。完整示例见仓库的 examples/responses.json。
@@ -866,6 +868,17 @@ paths:
                           type: integer
                           description: "互相连上的时间（毫秒时间戳）"
                           example: 1792830000000
+                        rate:
+                          type: [object, "null"]
+                          description: "我给 TA 的分，和网页上互相连上的卡一样：连上的第二天起才有，当天为 null；只有我给 TA 的（1.12.0 起）"
+                          properties:
+                            played:
+                              type: [boolean, "null"]
+                              description: "一起玩过没有，null 是还没回答"
+                            mine:
+                              type: number
+                              description: "我给的分，0–5，半颗星一档，0 是没打"
+                          example: { played: true, mine: 4 }
                   n:
                     type: integer
                     description: "互相连上的总数"
@@ -898,6 +911,149 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Card"
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /me/bag:
+    get:
+      tags: ["玩家个人数据"]
+      summary: "我的贴纸和星尘"
+      operationId: getMyBag
+      description: |
+        **需要权限 `bag`。**（1.12.0 起）
+
+        和网页仓库里「贴纸」那一页一样：有过的每种贴纸和星尘余额。只有贴纸，卡面、卡套、卡背、兑换、任务、贴纸包都不给；贴在星卡上的贴纸见 `me/card` 的 `deco`。只读。
+      security:
+        - client: []
+          token: []
+      responses:
+        "200":
+          description: "仓库里的贴纸和星尘"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [stickers, dust]
+                properties:
+                  stickers:
+                    type: array
+                    description: "有过的每种贴纸（同一张贴纸的不同材质算两种），最早拿到的在前"
+                    items:
+                      type: object
+                      required: [id, sticker, finish, qty, seed, url]
+                      properties:
+                        id:
+                          type: string
+                          description: "s:<贴纸>:<材质>"
+                          example: "s:cat:holo"
+                        sticker:
+                          type: string
+                          description: "贴纸 id，名字见 GET /stickers"
+                          example: "cat"
+                        finish:
+                          type: string
+                          description: "材质：paper、glitter、holo、gold、embroid、clear"
+                          example: "holo"
+                        qty:
+                          type: integer
+                          description: "仓库里还有几张（贴在星卡上的不算）；0 是用完了"
+                          example: 2
+                        seed:
+                          type: integer
+                          description: "划痕位置，和网页仓库里画的一样"
+                          example: 8072
+                        url:
+                          type: string
+                          description: "这张贴纸的图（SVG，没有磨损）"
+                          example: "https://vrcc.cc/api/v1/stickers/cat?fin=holo&seed=8072"
+                  dust:
+                    type: integer
+                    description: "星尘余额"
+                    example: 120
+        '401':
+          $ref: "#/components/responses/AuthError"
+        '403':
+          $ref: "#/components/responses/ScopeError"
+        '404':
+          $ref: "#/components/responses/GoneError"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /me/settings:
+    get:
+      tags: ["玩家个人数据"]
+      summary: "我的资料和隐私设置"
+      operationId: getMySettings
+      description: |
+        **需要权限 `settings`。**（1.12.0 起）
+
+        和网页「我的资料」上显示的一样：模型截图和关于我的审核状态、关于我、推荐里的几项、VRChat 是否验证、「谁能看到」九项。每个玩家都有这九项；网页上不显示的功能（比如个人主页、星轨相交）照样给存着的值，这时不起作用。不给邮箱、星池、设备、兑换码、邀请码；VRChat 名字要 `vrchat` 权限（`/oauth/userinfo`）。只读。
+      security:
+        - client: []
+          token: []
+      responses:
+        "200":
+          description: "我的资料和隐私设置"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [photo, about, aboutState, prefs, vrcVerified, privacy]
+                properties:
+                  photo:
+                    type: string
+                    enum: [none, checking, ok, hidden]
+                    description: "模型截图：none 没有、checking 审核中、ok 通过、hidden 没通过"
+                  about:
+                    type: array
+                    description: "关于我的问答，q 是问题的文字；没填是 []"
+                    items:
+                      type: object
+                      properties:
+                        q: { type: string, example: "最近常去的世界是" }
+                        a: { type: string, example: "星夜茶馆" }
+                  aboutState:
+                    type: [string, "null"]
+                    enum: [checking, ok, hidden, null]
+                    description: "关于我的检查；没填是 null"
+                  prefs:
+                    type: object
+                    description: "推荐用的几项，网页上显示的文字"
+                    properties:
+                      times: { type: array, items: { type: string }, description: "常在线的时间", example: ["工作日晚上"] }
+                      wants: { type: array, items: { type: string }, description: "想找人一起", example: ["逛新世界"] }
+                      voice: { type: [string, "null"], description: "说话习惯", example: "基本不开麦（无言势）" }
+                      voiceOk: { type: [string, "null"], description: "希望对方怎样", example: null }
+                  vrcVerified:
+                    type: boolean
+                    description: "VRChat 名字验证过没有"
+                  privacy:
+                    type: object
+                    description: "「谁能看到」每一项现在的设置"
+                    required: [verified, rating, star, online, shared, links, home, vrcinfo, cross]
+                    properties:
+                      verified: { type: string, enum: [all, mutual, off], description: "「已验证」标志" }
+                      rating: { type: string, enum: [all, mutual, off], description: "评分" }
+                      star: { type: string, enum: [mutual, off], description: "STAR 编号" }
+                      online: { type: string, enum: [mutual, off], description: "在线状态" }
+                      shared: { type: string, enum: [all, mutual, off], description: "共同好友" }
+                      links: { type: string, enum: [all, mutual, off], description: "我的连线数" }
+                      home: { type: string, enum: ["on", "off"], description: "个人主页" }
+                      vrcinfo: { type: string, enum: ["on", "off"], description: "个人主页上的 VRChat 资料" }
+                      cross: { type: string, enum: ["on", "off"], description: "擦肩通信 · 星轨相交" }
+              example:
+                photo: "ok"
+                about: [{ q: "最近常去的世界是", a: "星夜茶馆" }]
+                aboutState: "ok"
+                prefs: { times: ["工作日晚上"], wants: ["逛新世界"], voice: "基本不开麦（无言势）", voiceOk: null }
+                vrcVerified: true
+                privacy: { verified: "all", rating: "all", star: "mutual", online: "mutual", shared: "all", links: "all", home: "on", vrcinfo: "on", cross: "on" }
         '401':
           $ref: "#/components/responses/AuthError"
         '403':
@@ -3307,6 +3463,82 @@ paths:
           description: "材质、磨损或种子不对"
         "404":
           description: "没有这张贴纸"
+  /announcements:
+    get:
+      tags: ["开放数据"]
+      summary: "公告和停站"
+      operationId: getAnnouncements
+      description: |
+        网页上给所有玩家看的公告和停站时的说明（1.12.0 起）。只发给某个星池的公告、网页自己的新版本提示不在这里。停站时玩家自己的接口回答 `503 stop`，这个接口照样回答。任何网页都能直接读，也支持 `HEAD`；缓存 1 分钟。标题和正文是纯文字，显示时不要当 HTML。
+      security:
+        - client: []
+        - clientQuery: []
+      parameters:
+        - name: client
+          in: query
+          description: "客户端标识（仅在无法发送 X-Client 请求头时使用）"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "现在的公告"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [stop, posts]
+                properties:
+                  stop:
+                    type: [object, "null"]
+                    description: "停站时的说明和预计恢复时间；没停站时为 null"
+                    properties:
+                      say:
+                        type: [string, "null"]
+                        description: "说明"
+                      until:
+                        type: [integer, "null"]
+                        description: "预计恢复的时间（毫秒），没定时为 null"
+                  posts:
+                    type: array
+                    description: "正在显示的公告，新的在前"
+                    items:
+                      type: object
+                      required: [id, level, title, body, link, cover, end]
+                      properties:
+                        id:
+                          type: integer
+                        level:
+                          type: string
+                          enum: [bar, pop, force]
+                          description: "bar 顶上一条（玩家能关掉）；pop 弹窗（每台设备一次）；force 强制（点「知道了」才能继续）"
+                        title:
+                          type: string
+                        body:
+                          type: [string, "null"]
+                          description: "正文（保留换行），没有时为 null"
+                        link:
+                          type: [string, "null"]
+                          description: "「查看」打开的完整网址，没有时为 null"
+                        cover:
+                          type: [string, "null"]
+                          description: "卡片顶上的图（完整网址），没有时为 null"
+                        end:
+                          type: [integer, "null"]
+                          description: "什么时候撤下（毫秒），null 是没定"
+              example:
+                stop: null
+                posts:
+                  - id: 12
+                    level: "pop"
+                    title: "地图榜开放打分"
+                    body: "去过的地图都可以打 1–10 分。"
+                    link: "https://vrcc.cc/match/?tab=maps"
+                    cover: "https://vrcc.cc/assets/posts/maps.webp"
+                    end: 1793641333399
+        "403":
+          $ref: "#/components/responses/ClientError"
+        default:
+          $ref: "#/components/responses/Error"
   /status:
     get:
       tags: ["开放数据"]
@@ -3914,6 +4146,8 @@ components:
             photos: "查看其他玩家的照片（互相连上后才是清晰的）：GET /me/stars/{n}/photo"
             maps.write: "在你操作时，写地图介绍、给短评点赞或踩、添加地图：POST /me/maps、/me/maps/{world}/intro、/me/map-votes"
             safety: "在你操作时，举报或隐藏其他玩家和内容：举报、隐藏、GET /me/hidden"
+            bag: "查看你仓库里的贴纸和星尘：GET /me/bag"
+            settings: "查看你的资料和隐私设置（不含邮箱和星池）：GET /me/settings"
 
   responses:
     ClientError:
@@ -4037,7 +4271,7 @@ components:
       type: string
       description: |
         空格分隔的权限（请求时也接受逗号或 `+`），返回时按固定顺序、`profile` 在最前：
-        `profile` `vrchat` `card` `maps` `maps.rate` `notifications` `crossings` `mutuals` `today` `inbox` `link` `chat` `chat.send` `posts` `posts.write` `photos` `maps.write` `safety`。
+        `profile` `vrchat` `card` `maps` `maps.rate` `notifications` `crossings` `mutuals` `today` `inbox` `link` `chat` `chat.send` `posts` `posts.write` `photos` `maps.write` `safety` `bag` `settings`。
         敏感权限（`vrchat` `maps.rate` `crossings` `mutuals` `today` `inbox` `link` `chat` `chat.send` `posts` `posts.write` `photos` `maps.write` `safety`）只给开 Issue 登记的客户端与审核通过的应用（未审核的应用只有登记人能同意）；`dev-` 只能要普通权限。省略时：登记客户端为 `profile notifications crossings mutuals maps maps.rate`，`dev-` 为 `profile notifications maps`，自助登记的应用只有 `profile`。
       example: "profile notifications maps maps.rate"
 
@@ -4195,6 +4429,16 @@ components:
         friends:
           type: [integer, "null"]
           description: "共同的星友数（对方不公开时为 null）"
+        rate:
+          type: object
+          description: "只在互相连上的卡上，连上的第二天起才有：我给 TA 的分（只有我给 TA 的）"
+          properties:
+            played:
+              type: [boolean, "null"]
+              description: "一起玩过没有，null 是还没回答"
+            mine:
+              type: number
+              description: "我给的分，0–5，半颗星一档，0 是没打"
         deco:
           $ref: "#/components/schemas/Deco"
 

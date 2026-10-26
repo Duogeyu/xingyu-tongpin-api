@@ -19,6 +19,7 @@
 - [快速开始与接入流程](#快速开始与接入流程)
 - [请求规范与通用错误](#请求规范与通用错误)（[权限](#权限scope)）
 - [开放数据：地图榜](#开放数据地图榜)
+- [公告和停站](#公告和停站)
 - [玩家自己的接口](#玩家自己的接口)（[设备授权](#设备授权post-apiv1devicecode)）
 - [贴纸素材](#贴纸素材)
 - [用星遇同频登录（网站）](#用星遇同频登录网站)
@@ -37,6 +38,7 @@
 | **地图榜** | `GET` | [`/api/v1/boards/maps`](#排行get-apiv1boardsmapslimit20) | `client` | 地图榜总榜排行（有评分的地图，按名次排，`limit` 1–100） |
 | **地图榜** | `GET` | [`/api/v1/maps`](#查几张地图get-apiv1mapsidswrld_wrld_) | `client` | 按世界 ID 批量查几张地图（最多 20 张，只返回在榜上的） |
 | **地图榜** | `GET` | [`/api/v1/maps/{world}`](#查一张地图get-apiv1mapsworld) | `client` | 查单张地图在地图榜上的数据 |
+| **公告** | `GET` | [`/api/v1/announcements`](#公告和停站) | `client` | 网页上给所有玩家的公告，和停站时的说明 |
 | **素材** | `GET` | [`/api/v1/stickers`](#贴纸素材) | 无 | 所有贴纸的名字、材质和图片地址 |
 | **素材** | `GET` | [`/api/v1/stickers/{id}`](#一张贴纸get-apiv1stickersidfinwearseed) | 无 | 一张贴纸的图（SVG），按材质、磨损画 |
 | **连接** | `POST` | [`/api/v1/device/code`](#设备授权post-apiv1devicecode) | `client` | 设备授权第一步：拿一个给玩家看的码和同意链接（推荐） |
@@ -48,6 +50,8 @@
 | **玩家本人** | `GET` | [`/api/v1/me/crossings`](#星轨相交get-apiv1mecrossingsmark1) | `client` + `Bearer`（`crossings`） | 「星轨相交」擦肩列表（支持标已读消红点） |
 | **玩家本人** | `GET` | [`/api/v1/me/mutuals`](#互相连上get-apiv1memutuals) | `client` + `Bearer`（`mutuals`） | 「互相连上」的星列表（含对方的 VRChat 名字与可选用户 ID） |
 | **玩家本人** | `GET` | [`/api/v1/me/card`](#我的星卡get-apiv1mecard) | `client` + `Bearer`（`card`） | 玩家自己的星卡：星位、星群、成分、介绍 |
+| **玩家本人** | `GET` | [`/api/v1/me/bag`](#我的贴纸和星尘get-apiv1mebag) | `client` + `Bearer`（`bag`） | 仓库里的贴纸和星尘余额 |
+| **玩家本人** | `GET` | [`/api/v1/me/settings`](#我的资料和隐私设置get-apiv1mesettings) | `client` + `Bearer`（`settings`） | 「我的资料」上的审核状态、关于我、推荐偏好和「谁能看到」 |
 | **玩家本人** | `GET` | [`/api/v1/me/maps`](#我打过分的地图get-apiv1memaps) | `client` + `Bearer`（`maps`） | 玩家在地图榜打过分的地图和短评（最近的在前） |
 | **玩家本人** | `GET` | [`/api/v1/me/maps/{world}`](#所在的地图get-apiv1memapsworld) | `client` + `Bearer`（`maps`） | 玩家当前所在地图在榜上的状态、本人评分与短评 |
 | **玩家本人** | `POST` | [`/api/v1/me/maps/{world}/rating`](#打分post-apiv1memapsworldrating) | `client` + `Bearer`（`maps.rate`） | 给当前所在的地图打分（1–10 分）及写短评（最多 30 字） |
@@ -254,8 +258,10 @@ sequenceDiagram
 | `photos` | 查看其他玩家的照片（互相连上后才是清晰的） | `GET me/stars/{n}/photo` | | ✓ |
 | `maps.write` | 在你操作时，写地图介绍、给短评点赞或踩、添加地图 | `POST me/maps`、`…/intro`、`me/map-votes` | | ✓ |
 | `safety` | 在你操作时，举报或隐藏其他玩家和内容 | 举报、隐藏、`GET me/hidden` | | ✓ |
+| `bag` | 查看你仓库里的贴纸和星尘 | `GET me/bag` | | |
+| `settings` | 查看你的资料和隐私设置（不含邮箱和星池） | `GET me/settings` | | |
 
-**敏感权限只给审核过的。** 普通权限（`profile`、`card`、`maps`、`notifications`）谁都能要；打了 ✓ 的敏感权限只给：
+**敏感权限只给审核过的。** 普通权限（`profile`、`card`、`maps`、`notifications`、`bag`、`settings`）谁都能要；打了 ✓ 的敏感权限只给：
 
 - **开 Issue 登记的客户端**：什么都能要。不写就是 `profile notifications crossings mutuals maps maps.rate`（和我们的 VRCX 脚本一样），旧的连接码连上的也是这一串。
 - **审核通过的自助登记应用**（`app_…`）：什么都能要，不写只有 `profile`。网站在 `/oauth/authorize` 里用 `scope` 要，客户端在 `POST /device/code` 里要（`X-Client` 填 `client_id`）。
@@ -408,6 +414,44 @@ sequenceDiagram
 
 - 回答 `{"map": {…}, "at": 1792830000000}`，字段同上。
 - 如果地图不在榜上或未通过审核，返回 `404`（`{"error": "not_found"}`）。
+
+---
+
+## 公告和停站
+
+### `GET /api/v1/announcements`
+
+要带 `client`，不用令牌，任何网页都能直接读，也支持 `HEAD`（和开放数据一样）。内容和网页上给所有玩家看的公告一样。停站的时候也能问（1.12.0 起）。
+
+```json
+{
+  "stop": null,
+  "posts": [
+    {
+      "id": 12,
+      "level": "pop",
+      "title": "地图榜开放打分",
+      "body": "去过的地图都可以打 1–10 分。",
+      "link": "https://vrcc.cc/match/?tab=maps",
+      "cover": "https://vrcc.cc/assets/posts/maps.webp",
+      "end": 1793641333399
+    }
+  ]
+}
+```
+
+| 字段 | 说明 |
+| --- | --- |
+| `posts` | 正在显示的公告，新的在前。只有发给所有玩家的，只发给某个星池的不在这里 |
+| `level` | 网页上怎么显示：`bar` 顶上一条（玩家能关掉）、`pop` 弹窗（每台设备一次）、`force` 强制（点「知道了」才能继续） |
+| `title` / `body` | 标题和正文，纯文字（保留换行），显示时不要当 HTML；没有正文时 `body` 是 `null` |
+| `link` | 「查看」打开的完整网址，没有时是 `null` |
+| `cover` | 卡片顶上的图（完整网址），没有时是 `null` |
+| `end` | 什么时候撤下（毫秒时间），`null` 是没定 |
+| `stop` | 停站时是 `{say, until}`：说明和预计恢复的时间（毫秒，没定时是 `null`）；没停站时是 `null` |
+
+- 停站时，玩家自己的接口回答 `503 stop`，这个接口照样回答，可以用 `stop` 告诉玩家为什么、什么时候恢复。
+- 缓存 1 分钟。网页自己的新版本提示不在这里。
 
 ---
 
@@ -668,12 +712,15 @@ sequenceDiagram
       "star": 31,
       "vrc": "对方的 VRChat 名字",
       "vrcUser": "usr_…",
-      "at": 1792830000000
+      "at": 1792830000000,
+      "rate": { "played": true, "mine": 4 }
     }
   ],
   "n": 1
 }
 ```
+
+- `rate`：我给 TA 的分，和网页上互相连上的卡一样，连上的第二天起才有：`{played, mine}`，`played` 一起玩过没有（`null` 是还没回答），`mine` 我给的分（0–5，半颗星一档，`0` 是没打）。只有我给 TA 的，没有 TA 给我的。连上当天是 `null`（1.12.0 起）。
 
 - `vrcUser`：对方的 VRChat 用户 ID（`usr_…`），**只在对方验证过 VRChat、并且公开了「已验证」标志时才有**，否则为 `null`。
 - **加好友规范**：如果客户端提供加好友入口，请打开客户端自己的玩家页面（例如 VRCX 的玩家详情弹窗）让玩家自己点添加，**不要替玩家向 VRChat 发好友请求**。
@@ -713,6 +760,75 @@ sequenceDiagram
 | `scores` | 四个星群的成分，0–100 |
 | `intro` | 星卡介绍；还在写（AI 生成中）时是 `null` |
 | `deco` | 星卡的装扮，格式见[星卡上的贴纸](#星卡上的贴纸)；没装扮时是 `null` |
+
+---
+
+### 我的贴纸和星尘：`GET /api/v1/me/bag`
+
+需要权限 `bag`。和网页仓库里「贴纸」那一页一样（1.12.0 起）。
+
+```json
+{
+  "stickers": [
+    { "id": "s:cat:holo", "sticker": "cat", "finish": "holo", "qty": 2, "seed": 8072, "url": "https://vrcc.cc/api/v1/stickers/cat?fin=holo&seed=8072" },
+    { "id": "s:moon:paper", "sticker": "moon", "finish": "paper", "qty": 0, "seed": 9235, "url": "https://vrcc.cc/api/v1/stickers/moon?fin=paper&seed=9235" }
+  ],
+  "dust": 120
+}
+```
+
+| 字段 | 说明 |
+| --- | --- |
+| `stickers` | 有过的每种贴纸（同一张贴纸的不同材质算两种），最早拿到的在前 |
+| `sticker` / `finish` | 贴纸 id 和材质，名字见[所有贴纸](#所有贴纸get-apiv1stickers) |
+| `qty` | 仓库里还有几张（贴在星卡上的不算）；`0` 是用完了，网页上也显示「用完了」 |
+| `seed` | 这张贴纸的划痕位置，和网页仓库里画的一样 |
+| `url` | 这张贴纸的图（SVG，没有磨损），`<img>` 直接能用 |
+| `dust` | 星尘余额 |
+
+- 只有贴纸。卡面、卡套、卡背、兑换、任务、贴纸包都不给。贴在星卡上的贴纸见 `me/card` 的 `deco`。
+- 只读，不能分解、兑换、贴上。
+
+---
+
+### 我的资料和隐私设置：`GET /api/v1/me/settings`
+
+需要权限 `settings`。和网页「我的资料」上显示的一样（1.12.0 起）。
+
+```json
+{
+  "photo": "ok",
+  "about": [{ "q": "最近常去的世界是", "a": "星夜茶馆" }],
+  "aboutState": "ok",
+  "prefs": { "times": ["工作日晚上"], "wants": ["逛新世界"], "voice": "基本不开麦（无言势）", "voiceOk": null },
+  "vrcVerified": true,
+  "privacy": { "verified": "all", "rating": "all", "star": "mutual", "online": "mutual", "shared": "all", "links": "all", "home": "on", "vrcinfo": "on", "cross": "on" }
+}
+```
+
+| 字段 | 说明 |
+| --- | --- |
+| `photo` | 模型截图：`none` 没有、`checking` 审核中、`ok` 通过、`hidden` 没通过 |
+| `about` | 关于我的问答（`[{q, a}]`，`q` 是问题的文字）；没填是 `[]` |
+| `aboutState` | 关于我的检查：`checking` 检查中、`ok` 通过、`hidden` 没通过；没填是 `null` |
+| `prefs` | 推荐用的几项，网页上显示的文字：`times` 常在线的时间、`wants` 想找人一起、`voice` 说话习惯、`voiceOk` 希望对方怎样；没选是 `[]` 或 `null` |
+| `vrcVerified` | VRChat 名字验证过没有（名字本身要 `vrchat` 权限，见 `oauth/userinfo`） |
+| `privacy` | 「谁能看到」每一项现在的设置，见下表 |
+
+| `privacy` 的键 | 网页上叫 | 值 |
+| --- | --- | --- |
+| `verified` | 「已验证」标志 | `all` 所有人、`mutual` 互相连上的人、`off` 不显示 |
+| `rating` | 评分 | `all`、`mutual`、`off` |
+| `star` | STAR 编号 | `mutual`、`off` |
+| `online` | 在线状态 | `mutual`、`off` |
+| `shared` | 共同好友 | `all`、`mutual`、`off` |
+| `links` | 我的连线数 | `all`、`mutual`、`off` |
+| `home` | 个人主页 | `on` 公开、`off` 不公开 |
+| `vrcinfo` | 个人主页上的 VRChat 资料 | `on`、`off` |
+| `cross` | 擦肩通信 · 星轨相交 | `on`、`off` |
+
+- 每个玩家都有这九项。有的功能不是每个人都能用（比如个人主页、星轨相交），网页上那时不显示这一项，这里照样给存着的值，这时它不起作用。
+- 不给邮箱、星池、设备、兑换码、邀请码。只读，不能改。
 
 ---
 
@@ -835,6 +951,7 @@ sequenceDiagram
 | `linked` / `mutual` | 我连向了 TA / 已经互相连上 |
 | `vrc` / `vrcUser` | 对方的 VRChat 名字和用户 ID，**只在互相连上时**才有 |
 | `friends` | 共同的星友数（对方不公开时是 `null`） |
+| `rate` | 只在互相连上的卡上：我给 TA 的分，和网页上互相连上的卡一样，连上的第二天起才有：`{played, mine}`，`played` 一起玩过没有（`null` 是还没回答），`mine` 我给的分（0–5，半颗星一档，`0` 是没打）。只有我给 TA 的，没有 TA 给我的；连上当天没有这个字段 |
 
 ---
 
@@ -1156,7 +1273,7 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 
 ## 贴纸素材
 
-星卡上的贴纸可以照网页的样子画出来。不用 `client`，也不用令牌，`<img>` 直接能用。这些图只用来显示玩家星卡上的贴纸，不要拿来当应用图标、表情包，也不要单独拿去卖。
+星卡上的贴纸可以照网页的样子画出来（玩家仓库里的贴纸见 [`me/bag`](#我的贴纸和星尘get-apiv1mebag)）。不用 `client`，也不用令牌，`<img>` 直接能用。这些图只用来显示玩家星卡上的贴纸，不要拿来当应用图标、表情包，也不要单独拿去卖。
 
 ### 星卡上的贴纸
 
@@ -1226,7 +1343,7 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
 | 能不能打分 | `me/maps/{world}` | `can: true`（已弃用） |
 | | 地图页 | `can: "yes"` |
 | 别的星 | `me/crossings` | `{n, name, line, group, star, intro（前 60 字）, vrc, linked, mutual, at, fresh}` |
-| | `me/mutuals` | `{n, name, group, star, vrc, vrcUser, at}` |
+| | `me/mutuals` | `{n, name, group, star, vrc, vrcUser, at, rate}`（`rate` 1.12.0 起） |
 | | 网页上的动作（`cards[]`、`card`） | 完整的星卡，见「[网页上的动作](#网页上的动作)」 |
 | | 私聊、评论、地图页里的人（`peer`、`who`） | `{n, name, group, photo, me, mutual, vrc?, verified?}`；地图页在没有 `mutuals` 时只给 `{name: "某位<星位>", group, me}` |
 | 玩家自己 | `device/token`、`connect` | `me: {star, vrc}`，`vrc` 是 VRChat 名字（字符串） |

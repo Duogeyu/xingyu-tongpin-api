@@ -2,13 +2,13 @@
   "POST /api/v1/device/code": {
     "status": 200,
     "body": {
-      "device_code": "b5964ecce780ed393900dd00a27b404689c96e50443601f5",
-      "user_code": "6LWV-UDYB",
+      "device_code": "c2a5ef536e5ddecb7ea46c9702ec0b1f056c677468f26616",
+      "user_code": "V7MC-3D4C",
       "verification_uri": "https://vrcc.cc/match/?connect",
-      "verification_uri_complete": "https://vrcc.cc/match/?connect=6LWVUDYB",
+      "verification_uri_complete": "https://vrcc.cc/match/?connect=V7MC3D4C",
       "expires_in": 600,
       "interval": 5,
-      "scope": "profile vrchat card maps maps.rate notifications crossings mutuals today inbox link chat chat.send posts posts.write photos maps.write safety"
+      "scope": "profile vrchat card maps maps.rate notifications crossings mutuals today inbox link chat chat.send posts posts.write photos maps.write safety bag settings"
     }
   },
   "POST /api/v1/device/token (pending)": {
@@ -20,9 +20,9 @@
   "POST /api/v1/device/token": {
     "status": 200,
     "body": {
-      "access_token": "fd64e64d01923b83eb32ee2acfaa4e14a5388608b4280948",
+      "access_token": "c0db031466b57641f9372e6146b839dc4f69bdad77952bcd",
       "token_type": "Bearer",
-      "scope": "profile vrchat card maps maps.rate notifications crossings mutuals today inbox link chat chat.send posts posts.write photos maps.write safety",
+      "scope": "profile vrchat card maps maps.rate notifications crossings mutuals today inbox link chat chat.send posts posts.write photos maps.write safety bag settings",
       "me": {
         "star": 101,
         "vrc": "Player1"
@@ -53,7 +53,7 @@
           "img": "https://vrcc.cc/maps/wrld_aaaaaaaa-0000-4000-8000-0000000000a1.jpg"
         }
       ],
-      "at": 1793035864598
+      "at": 1793037203747
     }
   },
   "GET /api/v1/maps": {
@@ -78,7 +78,7 @@
           "img": "https://vrcc.cc/maps/wrld_aaaaaaaa-0000-4000-8000-0000000000a1.jpg"
         }
       ],
-      "at": 1793035864599
+      "at": 1793037203749
     }
   },
   "GET /api/v1/maps/{world}": {
@@ -101,7 +101,24 @@
         "page": "https://vrcc.cc/maps/wrld_aaaaaaaa-0000-4000-8000-0000000000a1",
         "img": "https://vrcc.cc/maps/wrld_aaaaaaaa-0000-4000-8000-0000000000a1.jpg"
       },
-      "at": 1793035864601
+      "at": 1793037203751
+    }
+  },
+  "GET /api/v1/announcements": {
+    "status": 200,
+    "body": {
+      "stop": null,
+      "posts": [
+        {
+          "id": 1,
+          "level": "pop",
+          "title": "地图榜开放打分",
+          "body": "去过的地图都可以打 1–10 分。",
+          "link": "https://vrcc.cc/match/?tab=maps",
+          "cover": "https://vrcc.cc/assets/posts/maps.webp",
+          "end": 1793642003663
+        }
+      ]
     }
   },
   "GET /api/v1/stickers": {
@@ -426,7 +443,7 @@
   "GET /api/v1/status": {
     "status": 200,
     "body": {
-      "at": 1793035864602,
+      "at": 1793037203754,
       "state": "ok"
     }
   },
@@ -449,7 +466,7 @@
           "title": "星遇同频",
           "body": "有颗星连了你。",
           "url": "/match/?tab=inbox",
-          "at": 1793035864521
+          "at": 1793037203663
         }
       ],
       "read": 0
@@ -478,7 +495,11 @@
           "star": 102,
           "vrc": "Player2",
           "vrcUser": null,
-          "at": 1793035864521
+          "at": 1792864403663,
+          "rate": {
+            "played": true,
+            "mine": 4
+          }
         }
       ],
       "n": 1
@@ -505,6 +526,65 @@
       "deco": null
     }
   },
+  "GET /api/v1/me/bag": {
+    "status": 200,
+    "body": {
+      "stickers": [
+        {
+          "id": "s:cat:holo",
+          "sticker": "cat",
+          "finish": "holo",
+          "qty": 2,
+          "seed": 8072,
+          "url": "https://vrcc.cc/api/v1/stickers/cat?fin=holo&seed=8072"
+        },
+        {
+          "id": "s:moon:paper",
+          "sticker": "moon",
+          "finish": "paper",
+          "qty": 0,
+          "seed": 9235,
+          "url": "https://vrcc.cc/api/v1/stickers/moon?fin=paper&seed=9235"
+        }
+      ],
+      "dust": 120
+    }
+  },
+  "GET /api/v1/me/settings": {
+    "status": 200,
+    "body": {
+      "photo": "none",
+      "about": [
+        {
+          "q": "最近常去的世界是",
+          "a": "星夜茶馆"
+        }
+      ],
+      "aboutState": "ok",
+      "prefs": {
+        "times": [
+          "工作日晚上"
+        ],
+        "wants": [
+          "逛新世界"
+        ],
+        "voice": "基本不开麦（无言势）",
+        "voiceOk": null
+      },
+      "vrcVerified": false,
+      "privacy": {
+        "verified": "all",
+        "rating": "all",
+        "star": "mutual",
+        "online": "mutual",
+        "shared": "all",
+        "links": "all",
+        "home": "on",
+        "vrcinfo": "on",
+        "cross": "on"
+      }
+    }
+  },
   "GET /api/v1/me/maps": {
     "status": 200,
     "body": {
@@ -515,7 +595,7 @@
           "score": 9,
           "words": "光影很舒服",
           "wordsOk": "ok",
-          "at": 1793035864521,
+          "at": 1793037203663,
           "page": "https://vrcc.cc/maps/wrld_aaaaaaaa-0000-4000-8000-0000000000a1"
         }
       ]
@@ -565,8 +645,8 @@
       "day": "#1",
       "cards": [],
       "round": {
-        "at": 1793035864633,
-        "next": 1793115064633,
+        "at": 1793037203792,
+        "next": 1793116403792,
         "used": 0,
         "max": 6,
         "remind": false
@@ -577,47 +657,6 @@
     "status": 200,
     "body": {
       "cards": [
-        {
-          "n": 2,
-          "pos": "G1",
-          "name": "彩蛋猎人",
-          "line": "进了新世界先去找隐藏房间，找到了就招呼同伴来看。",
-          "group": "G",
-          "groupName": "漫游星群",
-          "vibe": "随场",
-          "lead": "双向",
-          "intro": "喜欢在安静的世界里散步。",
-          "about": [],
-          "common": [
-            "你们都想找人一起逛新世界",
-            "你们都常在工作日晚上在线",
-            "你们都在漫游星群"
-          ],
-          "photo": true,
-          "rating": null,
-          "star": 102,
-          "verified": false,
-          "scores": {
-            "G": 50,
-            "W": 50,
-            "Z": 50,
-            "L": 50
-          },
-          "deco": null,
-          "sprout": true,
-          "at": 1793035864521,
-          "src": "rec",
-          "linked": true,
-          "mutual": true,
-          "pair": {
-            "at": 1793035864521,
-            "src": "rec",
-            "mine": true
-          },
-          "vrc": "Player2",
-          "friends": 0,
-          "unread": 1
-        },
         {
           "n": 3,
           "pos": "G1",
@@ -646,11 +685,56 @@
           },
           "deco": null,
           "sprout": true,
-          "at": 1793035864521,
+          "at": 1793037203663,
           "src": "rec",
           "linked": false,
           "mutual": false,
           "friends": 0
+        },
+        {
+          "n": 2,
+          "pos": "G1",
+          "name": "彩蛋猎人",
+          "line": "进了新世界先去找隐藏房间，找到了就招呼同伴来看。",
+          "group": "G",
+          "groupName": "漫游星群",
+          "vibe": "随场",
+          "lead": "双向",
+          "intro": "喜欢在安静的世界里散步。",
+          "about": [],
+          "common": [
+            "你们都想找人一起逛新世界",
+            "你们都常在工作日晚上在线",
+            "你们都在漫游星群"
+          ],
+          "photo": true,
+          "rating": null,
+          "star": 102,
+          "verified": false,
+          "scores": {
+            "G": 50,
+            "W": 50,
+            "Z": 50,
+            "L": 50
+          },
+          "deco": null,
+          "sprout": true,
+          "at": 1792864403663,
+          "src": "rec",
+          "linked": true,
+          "mutual": true,
+          "pair": {
+            "at": 1792864403663,
+            "src": "rec",
+            "mine": true
+          },
+          "vrc": "Player2",
+          "rate": {
+            "played": true,
+            "mine": 4
+          },
+          "friends": 0,
+          "unread": 1
         }
       ],
       "counts": {
@@ -675,7 +759,7 @@
       "msg": {
         "id": 2,
         "text": "周末一起去看星星吗",
-        "at": 1793035864645,
+        "at": 1793037203802,
         "kind": "chat",
         "mine": true,
         "check": "wait"
@@ -699,7 +783,7 @@
           "last": {
             "id": 2,
             "text": "周末一起去看星星吗",
-            "at": 1793035864645,
+            "at": 1793037203802,
             "kind": "chat",
             "mine": true,
             "check": "wait"
@@ -716,14 +800,14 @@
         {
           "id": 1,
           "text": "好呀，几点？",
-          "at": 1793035864521,
+          "at": 1793037203663,
           "kind": "chat",
           "mine": false
         },
         {
           "id": 2,
           "text": "周末一起去看星星吗",
-          "at": 1793035864645,
+          "at": 1793037203802,
           "kind": "chat",
           "mine": true,
           "check": "wait"
@@ -751,13 +835,13 @@
           "kind": "shot",
           "text": "今天的星星很亮",
           "vis": "all",
-          "at": 1793035864521,
+          "at": 1793037203663,
           "mine": false,
           "img": {
             "w": 4,
             "h": 3,
             "grid": null,
-            "url": "https://vrcc.cc/api/v1/img/1?client=probe-full&g=1&exp=1793036464665&sig=16b6f9b1355f746b046bd7ab1c6ef2e18147f9ba459033179e95539a9f72a31e"
+            "url": "https://vrcc.cc/api/v1/img/1?client=probe-full&g=1&exp=1793037803821&sig=d0266358aca13430b03f41e7af3172b2700b9b231afd9f9e7310c9d7b5354bd2"
           },
           "map": null,
           "lit": 0,
@@ -767,7 +851,7 @@
             {
               "cid": 1,
               "text": "谢谢",
-              "at": 1793035864521,
+              "at": 1793037203663,
               "who": {
                 "n": 2,
                 "name": "彩蛋猎人",
@@ -838,7 +922,7 @@
         "kind": "text",
         "text": "今天认识了新朋友",
         "vis": "all",
-        "at": 1793035864670,
+        "at": 1793037203823,
         "mine": true,
         "check": "wait",
         "img": null,
@@ -855,9 +939,9 @@
     "status": 200,
     "body": {
       "level": 2,
-      "at": 1793035864521,
-      "v": "1793035864521:2",
-      "url": "https://vrcc.cc/api/v1/photo/2?client=probe-full&g=1&exp=1793036464676&sig=ba4233f19be924e7909febd33e34a5da715974b936dbba9e3ea0cfbbcfba3028"
+      "at": 1793037203663,
+      "v": "1793037203663:2",
+      "url": "https://vrcc.cc/api/v1/photo/2?client=probe-full&g=1&exp=1793037803831&sig=bebc5fff7578510573e43906bf1e4774db7b55178a50c04d039ce1cfe9694757"
     }
   },
   "POST /api/v1/me/posts/{id}/comments POST": {
@@ -868,13 +952,13 @@
         "kind": "shot",
         "text": "今天的星星很亮",
         "vis": "all",
-        "at": 1793035864521,
+        "at": 1793037203663,
         "mine": false,
         "img": {
           "w": 4,
           "h": 3,
           "grid": null,
-          "url": "https://vrcc.cc/api/v1/img/1?client=probe-full&g=1&exp=1793036464684&sig=2122c0da83a181bdb618ab4726fb5c6c52a876ed2ba841283a852d0258aa0721"
+          "url": "https://vrcc.cc/api/v1/img/1?client=probe-full&g=1&exp=1793037803839&sig=d9a02f5ed40eba6db93a6db67d698a8fe58e4ee5a9db81007e08906b69dac0c5"
         },
         "map": null,
         "lit": 0,
@@ -884,7 +968,7 @@
           {
             "cid": 1,
             "text": "谢谢",
-            "at": 1793035864521,
+            "at": 1793037203663,
             "who": {
               "n": 2,
               "name": "彩蛋猎人",
@@ -898,7 +982,7 @@
           {
             "cid": 2,
             "text": "拍得真好",
-            "at": 1793035864680,
+            "at": 1793037203835,
             "who": {
               "n": 1,
               "name": "彩蛋猎人",
@@ -947,7 +1031,7 @@
         {
           "cid": 1,
           "text": "谢谢",
-          "at": 1793035864521,
+          "at": 1793037203663,
           "who": {
             "n": 2,
             "name": "彩蛋猎人",
@@ -961,7 +1045,7 @@
         {
           "cid": 2,
           "text": "拍得真好",
-          "at": 1793035864680,
+          "at": 1793037203835,
           "who": {
             "n": 1,
             "name": "彩蛋猎人",
@@ -983,13 +1067,13 @@
         "kind": "shot",
         "text": "今天的星星很亮",
         "vis": "all",
-        "at": 1793035864521,
+        "at": 1793037203663,
         "mine": false,
         "img": {
           "w": 4,
           "h": 3,
           "grid": null,
-          "url": "https://vrcc.cc/api/v1/img/1?client=probe-full&g=1&exp=1793036464691&sig=ca02d00f674da4c00f25939621d2aabb0de4abd63c69ebd9992aaeeb95bc10ad"
+          "url": "https://vrcc.cc/api/v1/img/1?client=probe-full&g=1&exp=1793037803845&sig=a59f6f579680f7d7fa52c71c7fbef6953b75b275b4570e6b91fbb205f1d8f960"
         },
         "map": null,
         "lit": 0,
@@ -999,7 +1083,7 @@
           {
             "cid": 1,
             "text": "谢谢",
-            "at": 1793035864521,
+            "at": 1793037203663,
             "who": {
               "n": 2,
               "name": "彩蛋猎人",
@@ -1013,7 +1097,7 @@
           {
             "cid": 2,
             "text": "拍得真好",
-            "at": 1793035864680,
+            "at": 1793037203835,
             "who": {
               "n": 1,
               "name": "彩蛋猎人",
@@ -1062,7 +1146,7 @@
         {
           "cid": 1,
           "text": "谢谢",
-          "at": 1793035864521,
+          "at": 1793037203663,
           "who": {
             "n": 2,
             "name": "彩蛋猎人",
@@ -1076,7 +1160,7 @@
         {
           "cid": 2,
           "text": "拍得真好",
-          "at": 1793035864680,
+          "at": 1793037203835,
           "who": {
             "n": 1,
             "name": "彩蛋猎人",
@@ -1098,13 +1182,13 @@
         "kind": "shot",
         "text": "今天的星星很亮",
         "vis": "all",
-        "at": 1793035864521,
+        "at": 1793037203663,
         "mine": false,
         "img": {
           "w": 4,
           "h": 3,
           "grid": null,
-          "url": "https://vrcc.cc/api/v1/img/1?client=probe-full&g=1&exp=1793036464698&sig=15e19627b00dc819531ffbc211476ab57df50f9082c11b5640fc4075790f1054"
+          "url": "https://vrcc.cc/api/v1/img/1?client=probe-full&g=1&exp=1793037803852&sig=ea0d094ac3823c61ae44f3c89957c4b4bbb747cdb5b445edaafa5108afca255f"
         },
         "map": null,
         "lit": 1,
@@ -1114,7 +1198,7 @@
           {
             "cid": 1,
             "text": "谢谢",
-            "at": 1793035864521,
+            "at": 1793037203663,
             "who": {
               "n": 2,
               "name": "彩蛋猎人",
@@ -1128,7 +1212,7 @@
           {
             "cid": 2,
             "text": "拍得真好",
-            "at": 1793035864680,
+            "at": 1793037203835,
             "who": {
               "n": 1,
               "name": "彩蛋猎人",
@@ -1268,7 +1352,7 @@
         "text": "夜里人少，适合安静地坐一会儿。",
         "up": 0,
         "down": 0,
-        "at": 1793035864521,
+        "at": 1793037203663,
         "who": {
           "n": 2,
           "name": "彩蛋猎人",
@@ -1291,7 +1375,7 @@
           "score": 8,
           "up": 0,
           "down": 0,
-          "at": 1793035864521,
+          "at": 1793037203663,
           "who": {
             "n": 2,
             "name": "彩蛋猎人",
@@ -1313,7 +1397,7 @@
           "score": 9,
           "up": 0,
           "down": 0,
-          "at": 1793035864628,
+          "at": 1793037203786,
           "who": {
             "n": 1,
             "name": "彩蛋猎人",
@@ -1345,7 +1429,7 @@
           "text": "夜里人少，适合安静地坐一会儿。",
           "up": 0,
           "down": 0,
-          "at": 1793035864521,
+          "at": 1793037203663,
           "who": {
             "n": 2,
             "name": "彩蛋猎人",
@@ -1397,7 +1481,7 @@
         "linked": true,
         "mutual": true,
         "pair": {
-          "at": 1793035864714,
+          "at": 1793037203867,
           "src": "rec",
           "mine": false
         },
@@ -1427,7 +1511,7 @@
       "blocks": [
         {
           "n": 3,
-          "at": 1793035864717,
+          "at": 1793037203871,
           "vrc": "Player3",
           "name": "彩蛋猎人",
           "report": null
@@ -1604,7 +1688,7 @@
         "text": "夜里人少，适合安静地坐一会儿。",
         "up": 0,
         "down": 0,
-        "at": 1793035864521,
+        "at": 1793037203663,
         "who": {
           "n": 2,
           "name": "彩蛋猎人",
@@ -1627,7 +1711,7 @@
           "score": 8,
           "up": 1,
           "down": 0,
-          "at": 1793035864521,
+          "at": 1793037203663,
           "who": {
             "n": 2,
             "name": "彩蛋猎人",
@@ -1649,7 +1733,7 @@
           "score": 9,
           "up": 0,
           "down": 0,
-          "at": 1793035864628,
+          "at": 1793037203786,
           "who": {
             "n": 1,
             "name": "彩蛋猎人",
@@ -1668,7 +1752,7 @@
           "text": "雨天来的时候灯光最好看。",
           "up": 0,
           "down": 0,
-          "at": 1793035864765,
+          "at": 1793037203912,
           "who": {
             "n": 1,
             "name": "彩蛋猎人",
@@ -1731,7 +1815,7 @@
         "text": "夜里人少，适合安静地坐一会儿。",
         "up": 0,
         "down": 0,
-        "at": 1793035864521,
+        "at": 1793037203663,
         "who": {
           "n": 2,
           "name": "彩蛋猎人",
@@ -1754,7 +1838,7 @@
           "score": 8,
           "up": 1,
           "down": 0,
-          "at": 1793035864521,
+          "at": 1793037203663,
           "who": {
             "n": 2,
             "name": "彩蛋猎人",
@@ -1776,7 +1860,7 @@
           "score": 9,
           "up": 0,
           "down": 0,
-          "at": 1793035864628,
+          "at": 1793037203786,
           "who": {
             "n": 1,
             "name": "彩蛋猎人",
@@ -1846,7 +1930,7 @@
         "text": "夜里人少，适合安静地坐一会儿。",
         "up": 0,
         "down": 0,
-        "at": 1793035864521,
+        "at": 1793037203663,
         "who": {
           "n": 2,
           "name": "彩蛋猎人",
