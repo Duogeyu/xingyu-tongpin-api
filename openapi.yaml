@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.14.0"
+  version: "1.15.0"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -4546,6 +4546,8 @@ components:
           type: boolean
           description: "有没有验证过 VRChat 账号（只要普通权限；账号本身要 vrchat）"
           example: true
+        gravity:
+          $ref: "#/components/schemas/Gravity"
         deco:
           $ref: "#/components/schemas/Deco"
 
@@ -4625,6 +4627,8 @@ components:
         verified:
           type: boolean
           description: "对方验证过 VRChat 账号"
+        gravity:
+          $ref: "#/components/schemas/Gravity"
         scores:
           type: [object, "null"]
           description: "四个星群的成分"
@@ -4669,6 +4673,34 @@ components:
           items: { type: array }
           example: [[0, "cat", "holo", 1.25, 4321, [30, 40, 22, -8]]]
 
+    Gravity:
+      type: object
+      description: "引力标：这颗星在爱发电支持星遇同频，和网页上星卡、名字后面的引力标一样（1.15.0 起）。只有 18 岁以上的星会有；没有支持、本人把标收起来了、结束后没选留着的，没有这个字段"
+      required: [stage, gray, months, since]
+      properties:
+        stage:
+          type: string
+          enum: ["heart", "gravity", "binary", "cluster", "galaxy"]
+          description: "标的样子：heart 心动；gravity 引力，引力满 3 个月 binary 双星、6 个月 cluster 星团、12 个月 galaxy 星系"
+          example: "binary"
+        gray:
+          type: boolean
+          description: "已经结束、本人选了留着（网页上是灰色的标）"
+          example: false
+        months:
+          type: integer
+          minimum: 1
+          description: "一共支持了几个月"
+          example: 3
+        since:
+          type: string
+          description: "开始支持的月份（北京时间，YYYY-MM）"
+          example: "2026-08"
+        until:
+          type: string
+          description: "结束的月份（北京时间，YYYY-MM），只在 gray 为 true 时有"
+          example: "2026-10"
+
     Peer:
       type: object
       additionalProperties: true
@@ -4689,6 +4721,11 @@ components:
         vrc:
           type: string
           description: "互相连上时对方的 VRChat 名字"
+        verified:
+          type: boolean
+          description: "对方验证过 VRChat 账号（按对方的隐私设置，没有时不给）"
+        gravity:
+          $ref: "#/components/schemas/Gravity"
 
     Msg:
       type: object

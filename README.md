@@ -846,6 +846,7 @@ sequenceDiagram
   "n": 77,
   "star": 128,
   "verified": true,
+  "gravity": { "stage": "binary", "gray": false, "months": 3, "since": "2026-08" },
   "name": "拾光旅人",
   "line": "放慢脚步逛世界，在角落拍下别人没注意到的光。",
   "group": "G",
@@ -862,6 +863,7 @@ sequenceDiagram
 | `n` | 玩家自己的星编号，和其他星卡的 `n` 一样；用它调 `me/stars/{n}/photo` 拿自己的清晰照片 |
 | `star` | `/light/` 点亮编号，没有时是 `null` |
 | `verified` | 有没有验证过 VRChat 账号 |
+| `gravity` | 引力标（1.15.0 起）：`stage` 样子（`heart` 心动、`gravity` 引力、`binary` 双星、`cluster` 星团、`galaxy` 星系），`gray` 已结束、留着的灰色标，`months` 一共几个月，`since` 开始的月份，结束了的还有 `until`。没有引力标时没有这个字段；星卡、私聊和星友圈里的人身上也是同样的格式 |
 | `name` / `line` | 星位名和一句描述 |
 | `group` / `groupName` | 所属星群代号（`G` 漫游、`W` 游戏、`Z` 创作、`L` 聊天、`A` 万象）和名字 |
 | `vibe` | `安静`、`随场` 或 `热闹` |

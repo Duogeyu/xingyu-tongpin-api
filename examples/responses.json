@@ -692,6 +692,12 @@
       "n": 1,
       "star": 101,
       "verified": false,
+      "gravity": {
+        "stage": "binary",
+        "gray": false,
+        "months": 3,
+        "since": "2026-08"
+      },
       "name": "彩蛋猎人",
       "line": "进了新世界先去找隐藏房间，找到了就招呼同伴来看。",
       "group": "G",
