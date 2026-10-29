@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.15.0"
+  version: "1.15.1"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -3576,7 +3576,7 @@ paths:
                   finishes:
                     type: object
                     additionalProperties: { type: string }
-                    example: { paper: "纸质", glitter: "闪粉", holo: "镭射", gold: "烫金", embroid: "刺绣", clear: "透明" }
+                    example: { paper: "纸质", glitter: "闪粉", holo: "镭射", gold: "烫金", embroid: "刺绣", clear: "透明", resin: "滴胶" }
   /stickers/{id}:
     get:
       tags: ["贴纸素材"]

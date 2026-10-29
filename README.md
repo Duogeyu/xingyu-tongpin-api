@@ -1418,11 +1418,11 @@ curl -H "X-Client: app_0123456789abcdef" -H "Authorization: Bearer <access_token
     "cat": { "name": "猫猫头", "finishes": ["paper", "glitter", "holo", "gold", "embroid", "clear"], "url": "https://vrcc.cc/api/v1/stickers/cat" },
     "peek": { "name": "QUASO", "finishes": ["paper"], "url": "https://vrcc.cc/api/v1/stickers/peek" }
   },
-  "finishes": { "paper": "纸质", "glitter": "闪粉", "holo": "镭射", "gold": "烫金", "embroid": "刺绣", "clear": "透明" }
+  "finishes": { "paper": "纸质", "glitter": "闪粉", "holo": "镭射", "gold": "烫金", "embroid": "刺绣", "clear": "透明", "resin": "滴胶" }
 }
 ```
 
-缓存一天，以后可能会加新贴纸。
+缓存一天，以后可能会加新贴纸。贴纸 id 是小写字母开头、可以带数字（比如里程碑贴纸 `ms1`）。滴胶（`resin`）只是少数限定贴纸的唯一材质（支持者贴纸、千星），别的贴纸没有。
 
 ### 一张贴纸：`GET /api/v1/stickers/{id}?fin=&wear=&seed=`
 
