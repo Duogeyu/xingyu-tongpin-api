@@ -779,7 +779,7 @@ sequenceDiagram
 | `stars[].group` | 所属星群：`G` 漫游、`W` 游戏、`Z` 创作、`L` 聊天、`A` 万象 |
 | `stars[].vrc` | **只有互相连上（`mutual: true`）时才给对方的 VRChat 名字**，否则为 `null` |
 | `stars[].linked` / `mutual` | 我是否已连向 TA / 双方是否已互相连上 |
-| `stars[].fresh` | 是否为还没看过的新相交记录 |
+| `stars[].fresh` | 是否为还没看过的新相交记录。和已经互相连上（`mutual: true`）的星的相交不算新的，一直是 `false`（2026-10-31 起）；它们照样在列表里 |
 | `why` | 为何不可用或为空：<br>• `null`：正常<br>• `hide`：不给这位玩家看（**此时客户端不要显示这一整块**）<br>• `verify`：还没验证 VRChat 账号<br>• `wait`：VRChat 账号验证中<br>• `queued` / `sent`：机器人的好友请求排队中 / 已发出，等玩家在 VRChat 里同意<br>• `gone` / `friend`：玩家删了或关了机器人好友 |
 
 ---
@@ -1091,7 +1091,7 @@ sequenceDiagram
 - `cards`：连向玩家的星，最近的在前。
 - `counts`：连向我（`in`）、我连向（`out`）、互相连上（`mutual`）的人数，未读通知（`notes`）、未读私聊（`msgs`）。`regenToday`、`styles` 已弃用（网页不显示），2026-11-26 起不再返回。
 - `seen`：上次看过的最新时间，`at` 比它新的就是新的。
-- `cross`：星轨相交，`{"n": 一共几颗, "fresh": 还没看过的几颗}`。
+- `cross`：星轨相交，`{"n": 一共几颗, "fresh": 还没看过的几颗}`；`fresh` 不算已经互相连上的星（2026-10-31 起）。
 
 ---
 

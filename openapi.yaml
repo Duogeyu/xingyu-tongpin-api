@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: "星遇同频 · 开放接口 (Open API v1)"
-  version: "1.15.1"
+  version: "1.15.2"
   summary: "VRChat 中文社区「星遇同频」开放数据与第三方客户端接口"
   description: |
     [星遇同频](https://vrcc.cc/match/) 的官方开放接口，基础地址为 `https://vrcc.cc/api/v1/`。
@@ -881,7 +881,7 @@ paths:
                           example: 1792830000000
                         fresh:
                           type: boolean
-                          description: "是否为上次查看后新产生的记录"
+                          description: "是否为上次查看后新产生的记录；和已经互相连上的星的相交不算新的（false），2026-10-31 起"
                           example: true
                   n:
                     type: integer
@@ -3867,7 +3867,7 @@ paths:
                     description: "上次看过的最新时间（毫秒），at 比它新的是新的"
                   cross:
                     type: object
-                    description: "星轨相交：一共几颗（n）、还没看过的几颗（fresh）"
+                    description: "星轨相交：一共几颗（n）、还没看过的几颗（fresh，不算已经互相连上的星，2026-10-31 起）"
                     properties:
                       "n": { type: integer, example: 3 }
                       fresh: { type: integer, example: 1 }
